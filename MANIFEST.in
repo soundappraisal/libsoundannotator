@@ -1,0 +1,5 @@
+include libsoundannotator/cpsp/framescaleArray/*.h
+include libsoundannotator/cpsp/patchExtractor/*.h
+include libsoundannotator/cpsp/structureExtractor/*.h
+include libsoundannotator/tests/structureExtractor_test/*.txt
+
