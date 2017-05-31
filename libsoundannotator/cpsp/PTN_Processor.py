@@ -305,8 +305,7 @@ class PartialPTN_Processor(PTN_Processor):
 
         bandmeansarguments=dict()
         if self.config['logBandmeans']:
-            F_dB=10/np.log(10)
-            bandmeansarguments['rangecompression']=(lambda x: F_dB*np.log10(x))
+            bandmeansarguments['rangecompression']=(lambda x: self.F_dB*np.log2(x))
             if 'energy' in self.featurenames:
                 Eo=bandmeansarguments['rangecompression'](Em)
         elif 'energy' in self.featurenames:
