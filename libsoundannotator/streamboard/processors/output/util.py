@@ -20,8 +20,8 @@ limitations under the License.
 import logging, multiprocessing, os, glob, sys, datetime, h5py
 
 def getLocation(metadata, config):
-    if config['usewavname']:
-        location=os.path.basename(metadata['wav'])
+    if config['usefile_id']:
+        location=os.path.basename(metadata['file_id'])
     elif 'location' in metadata.keys():
         location=metadata['location'].replace(' ', '')
     else: # provide reasonable default

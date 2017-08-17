@@ -17,15 +17,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import redis, os, time
+import os, time
 import numpy as np
+from json import dumps
 
 from libsoundannotator.streamboard                import processor
 from libsoundannotator.streamboard.continuity     import Continuity
 
-from libsoundannotator.io.annotations             import FileAnnotation
 from libsoundannotator.io.wavinput                import WavChunkReader
-
 from libsoundannotator.io.hdfinput                import HdfChunkReader
 
 class WavProcessor(processor.InputProcessor):
@@ -65,14 +64,17 @@ class WavProcessor(processor.InputProcessor):
     def processSoundfile(self, soundfile):
         self.continuity = self.newFileContinuity
 
-        self.sources = set([soundfile.uid])
+        self.sources = set([soundfile.file_id])
 
         if soundfile.storagetype == 'wav':
-            self.reader = WavChunkReader(soundfile.filename)
-            self.oldchunk.metadata['wav']=soundfile.filename
+            self.reader = WavChunkReader(soundfile.filehandle)
+            self.oldchunk.metadata['file_id']=soundfile.file_id              # This fields is used to determine name of the outputfile in the FileWriter
             self.oldchunk.metadata['duration']=self.reader.getDuration()
+            if soundfile.extra_args:
+                self.oldchunk.metadata['annotation']=dumps(soundfile.extra_args)
+                    
         elif soundfile.storagetype == 'hdf':
-            self.reader = HdfChunkReader(soundfile.filename)
+            self.reader = HdfChunkReader(soundfile.filehandle)
         else:
             raise Exception("Unknown storage type for soundfile: {0}".format(soundfile.storagetype))
 
@@ -153,86 +155,3 @@ class WavProcessor(processor.InputProcessor):
         self.continuity=Continuity.last
         self.publish(data, self.continuity, self.getTimeStamp(None), self.getchunknumber(), {self.name:time.time()}, metadata=self.oldchunk.getMetaData())
 
-
-class JobProcessor(processor.InputProcessor):
-
-    def __init__(self, conn, name, *args, **kwargs):
-        super(JobProcessor, self).__init__(conn, name, *args, **kwargs)
-
-        self.requiredParameters('dir','timestep','ChunkSize')
-        self.requiredParametersWithDefault(RedisHost='localhost', RedisPort=6379, AddWhiteNoise=True)
-
-        self.chunksize = self.config['ChunkSize']
-        self.timestep = self.config['timestep']
-        self.AddWhiteNoise = self.config['AddWhiteNoise']
-
-    '''
-        A Redis connection is made
-    '''
-    def prerun(self):
-        self.redis = redis.StrictRedis(host=self.config['RedisHost'], port=self.config['RedisPort'])
-
-    '''
-        Every iteration Redis is checked for files in the 'audiojobs' set
-        If a job is retrieved, process the sound file(s)
-    '''
-    def process(self):
-        njobs = self.redis.zcard('audiojobs')
-        if njobs > 0:
-            self.logger.info("Has %d jobs" % njobs)
-            jobs = self.redis.zrange('audiojobs', 0, njobs)
-            for job in jobs:
-                annotation = FileAnnotation(os.path.join(self.config['dir'], job), job)
-                self.processSoundfile(annotation)
-        else:
-            self.logger.info("No jobs available")
-
-    '''
-        A new reader is created, and while that reader has frames, input is generated and published
-    '''
-    def processSoundfile(self, soundfile):
-        self.continuity = Continuity.newfile
-        self.sources = set([soundfile.uid])
-        ID = os.path.splitext(os.path.basename(soundfile.filename))[0]
-        self.reader = WavChunkReader(soundfile.filename, chunksize = self.chunksize)
-        self.logger.info("Processing file {0}".format(soundfile.filename))
-        while (self.reader.hasFrames() and self.stayAlive):
-            data = self.generateData()
-            self.publish(data,self.continuity, self.getTimeStamp(None), self.getchunknumber(), time.time(), identifier=ID)
-            self.checkAndProcessBoardMessage()
-            '''
-                Sleep is an artificial means of lowering the system load. Here it is done to allow
-                chunks to propagate along other modules
-            '''
-            time.sleep(self.timestep)
-            #set continuity
-            self.continuity = Continuity.withprevious
-
-    '''
-        The actual frames from the reader are read, and returned
-    '''
-    def generateData(self):
-        frames = self.reader.readFrames(self.chunksize)
-
-        # If specified, add some noise to prevent NaN from occuring due to log(E)
-        if self.AddWhiteNoise:
-            frames += self.AddWhiteNoise * np.random.rand(frames.shape[0])
-
-        data = {
-            'sound' : frames
-        }
-        return data
-
-    '''
-        It's necessary to overwrite this parent method because this is the start of the chain,
-        so no config['SampleRate'] value is known yet
-    '''
-    def getsamplerate(self, key):
-        return self.reader.getSamplerate()
-
-    '''
-        Instead of the current time, this returns the time inside the audio file
-    '''
-    def getTimeStamp(self, key):
-        self.logger.info('Time: {0}'.format(self.reader.getTime()))
-        return self.reader.getTime()

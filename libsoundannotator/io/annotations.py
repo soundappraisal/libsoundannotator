@@ -18,14 +18,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 class FileAnnotation(object):
-    def __init__(self, wf, uid, storagetype='wav'):
-        self.filename=wf
-        self.uid=uid
+    def __init__(self, filehandle, file_id, storagetype='wav'):
+        self.filehandle=filehandle
+        self.file_id=file_id
         self.storagetype=storagetype
         self.extra_args = dict()
 
     def __str__(self):
-        return 'FileAnnotation sourcefile: {0}  uid: {1} storagetype: {2}'.format(self.filename,self.uid, self.storagetype)
+        return 'FileAnnotation filehandle: {0}  file_id: {1} storagetype: {2}'.format(self.filehandle,self.file_id, self.storagetype)
         
     def setExtraArgs(self, keys, annotation):
         for key in keys:
