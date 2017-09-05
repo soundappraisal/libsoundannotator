@@ -78,7 +78,7 @@ class NetworkMixin(object):
         self._sockets = [None, None]
         #register the afterdataCallback
         afterData = kwargs.get('afterdataCallback', None)
-        if afterData != None:
+        if afterData is not None:
             self._logInfo("Registered afterdataCallback")
             self._afterdataCallback = afterData
 
@@ -92,7 +92,7 @@ class NetworkMixin(object):
     def pollSockets(self, timeout):
         if self._networkType == 'client':
             # send the stashed chunk
-            if self._chunk != None:
+            if self._chunk is not None:
                 self._connection.send(self._chunk)
                 self._chunk = None
 

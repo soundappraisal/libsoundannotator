@@ -74,7 +74,7 @@ class ScenarioLine(DataChunk):
         if inout =='out':
             self.chunkcontinuity=chunkcontinuity
             
-        if alignment == None:
+        if alignment is None:
             if inout =='in':
                 alignment = chunkAlignment()
             elif  inout =='out':
@@ -287,7 +287,7 @@ class CompositeTester(processor.Processor):
     def processData(self,compositeChunk):
         
         self.logger.info('Processing compositeChunk class of data field: {0} '.format(type(compositeChunk.received)))
-        if compositeChunk == None:
+        if compositeChunk is None:
             return
         
         scenarioline= self.scenario.scenariolist[0]
@@ -330,7 +330,7 @@ class CompositeTester(processor.Processor):
             '''
             
             if type(scenarioline.data[key]) == np.ndarray:
-                if multiply== None:
+                if multiply is None:
                     multiply=compositeChunk.received[key].data
                 else:
                     multiply*=compositeChunk.received[key].data

@@ -227,7 +227,7 @@ class compositeManager(object):
         # if it was of a withPrevious subtype
         
         if (continuity >= Continuity.withprevious):
-            if (self.lastcompleted == None) :
+            if (self.lastcompleted is None) :
                 continuity=Continuity.discontinuous
             elif (compositechunk.number != self.lastcompleted.number+1 ):
                 continuity=Continuity.discontinuous
@@ -315,7 +315,7 @@ class compositeManager(object):
             
             
             # identifier is used to identify an original source, should be the same for all incoming chunks. It can change over time, when switching wav-files for example in the wav-reader.  
-            if identifier == None:
+            if identifier is None:
                 identifier=chunk.identifier
             else:
                 if not identifier==chunk.identifier:

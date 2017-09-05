@@ -144,7 +144,7 @@ class NetworkMixin(object):
 
 	def disconnectSocket(self, sock):
 		#sock may be none if we have only one socket
-		if sock == None:
+		if sock is None:
 			#if instead we have no sockets, a disconnect might have happened
 			if len(self._sockets) == 0:
 				raise NoNetworkException("No connected sockets")
@@ -312,7 +312,7 @@ class NetworkMixin(object):
 						except:
 							continue #don't perform callback and don't set data
 						#extra callback option
-						if self._afterdataCallback != None:
+						if self._afterdataCallback is not None:
 							self._logInfo("Invoking afterdataCallback")
 							self._afterdataCallback(unpickled)
 						#unpickled data sits there until socket is ended
@@ -332,7 +332,7 @@ class NetworkMixin(object):
 	def prepareSend(self, sock, data):
 		self._logInfo("Prepare Send")
 		#sock may be none if we have only one socket
-		if sock == None:
+		if sock is None:
 			#if instead we have no sockets, a disconnect might have happened
 			if len(self._sockets) == 0:
 				raise NoNetworkException("No connected sockets")

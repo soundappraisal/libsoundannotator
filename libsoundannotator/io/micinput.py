@@ -84,7 +84,7 @@ class MicInput(object):
 		self.clockTolerance = kwargs.get('clockTolerance', 1.0)
 
 	def open(self, logger=None):
-		if logger != None:
+		if logger is not None:
 			logger.info("Using device {0}".format(self.deviceIndex))
 			logger.info('PyAudio format of Microphone stream: {0}'.format(self.format))
 		else:
@@ -99,12 +99,12 @@ class MicInput(object):
 									frames_per_buffer = self.maxBufferSize)
 			self.chunkStartTime=time.time()
 		except Exception as e:
-			if logger != None:
+			if logger is not None:
 				logger.error("Could not open stream due to Exception: {0}".format(e))
 			raise e
 
 	def getRead(self, logger=None):
-		if self.stream != None:
+		if self.stream is not None:
 			available = self.stream.get_read_available()
 			# Check if startTime is sufficiently close to the clocktime
 			self.readtime = time.time()
@@ -112,7 +112,7 @@ class MicInput(object):
 				oldChunkStartTime=self.chunkStartTime
 				self.chunkStartTime=self.readtime - (self.buffer.size + available)/np.float(self.rate)
 
-				if logger != None:
+				if logger is not None:
 					logger.error("Reset chunkStartTime from : {0} to : {1}".format(oldChunkStartTime,self.chunkStartTime))
 			#print "can read {0}, need {1}".format(available, self.bufferSize)
 			#if buffer has data, read it
@@ -121,7 +121,7 @@ class MicInput(object):
 				if self.buffer.size > self.readSize:
 					#split it up
 					#print "Need to clean buffer"
-					if logger != None:
+					if logger is not None:
 						logger.debug("MicInput: Splitting up buffer")
 					read = self.buffer[:self.readSize]
 					self.buffer = self.buffer[self.readSize:]
@@ -152,27 +152,27 @@ class MicInput(object):
 				except IOError as e:
 					#For instance, a buffer overflow
 					if e.strerror == pyaudio.paInputOverflowed:
-						if logger != None:
+						if logger is not None:
 							logger.error("Mic input overflow")
 						raise MicInputOverflowedException(e)
 					#Or a yet unknown exception
 					else:
-						if logger != None:
+						if logger is not None:
 							logger.error("Mic input exception: {0}".format(e))
 						#propagate the exception sensibly
 						raise MicInputException(str(e))
 				except Exception as e:
-					if logger != None:
+					if logger is not None:
 						logger.error("Unknown exception occured: {0}".format(e))
 					raise e
 		else:
 			raise Exception("Trying to read from non-active stream. open() it first!")
 
 	def monitorActivity(self, logger=None):
-		if self.activityTimer != None:
+		if self.activityTimer is not None:
 			inactivity = time.time() - self.activityTimer
 			if (inactivity > self.streamTimeout):
-				if logger != None:
+				if logger is not None:
 					logger.warning("Resetting stream because of inactivity")
 				self.resetStream()
 
@@ -193,14 +193,14 @@ class MicInput(object):
 			self.buffer = np.append(self.buffer, frameArray[:diff])
 			remainder = frameArray[diff:]
 			chunk = np.copy(self.buffer)
-			if logger != None:
+			if logger is not None:
 				logger.debug("MicInput: Return partial buffer")
 			#print("too much in read, have remainder of {0}".format(remainder.size))
 		elif self.buffer.size + frameArray.size == self.readSize:
 			#append everything
 			self.buffer = np.append(self.buffer, frameArray)
 			chunk = np.copy(self.buffer)
-			if logger != None:
+			if logger is not None:
 				logger.debug("MicInput: Return full buffer")
 			#print("Exactly enough :)")
 		else:
@@ -222,14 +222,14 @@ class MicInput(object):
 		hasInputChannels = []
 		for idx in range(self.pa.get_device_count()):
 			devinfo = self.pa.get_device_info_by_index(idx)
-			if logger != None:
+			if logger is not None:
 				logger.info("Device %d: %s, maxInputChannels: %d" % (idx, devinfo['name'], devinfo['maxInputChannels']))
 			else:
 				print( "Device %d: %s, maxInputChannels: %d" % (idx, devinfo['name'], devinfo['maxInputChannels']))
 
 			for device in self.inputDevices:
 				if device in devinfo["name"].lower() and devinfo['maxInputChannels'] > 0:
-					if logger != None:
+					if logger is not None:
 						logger.info("Found input device {0} with info {1}".format(idx, devinfo))
 					return idx, devinfo
 				elif devinfo['maxInputChannels'] > 0:
@@ -252,7 +252,7 @@ class MicInput(object):
 			raise e
 
 	def isActive(self):
-		if self.stream != None:
+		if self.stream is not None:
 			if self.stream.is_active():
 				return True
 
@@ -299,7 +299,7 @@ class MicInputCallback(MicInput):
 	
 	
 	def open(self, logger=None):
-		if logger != None:
+		if logger is not None:
 			logger.info("Using device {0}".format(self.deviceIndex))
 			logger.info('PyAudio format of Microphone stream: {0}'.format(self.format))
 		else:
@@ -314,7 +314,7 @@ class MicInputCallback(MicInput):
 									frames_per_buffer = self.readSize,
 									stream_callback=self.callback)
 		except Exception as e:
-			if logger != None:
+			if logger is not None:
 				logger.error("Could not open stream due to Exception: {0}".format(e))
 			raise e
 

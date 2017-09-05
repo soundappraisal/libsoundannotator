@@ -29,7 +29,7 @@ from libsoundannotator.io.hdfinput                import HdfChunkReader
 
 class WavProcessor(processor.InputProcessor):
     def __init__(self, conn, name, *args, **kwargs):
-        if (conn != None):
+        if (conn is not None):
             super(WavProcessor, self).__init__(conn, name, *args, **kwargs)
 
         self.requiredParameters('ChunkSize', 'SoundFiles', 'timestep')

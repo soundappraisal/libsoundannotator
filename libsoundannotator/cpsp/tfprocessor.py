@@ -308,7 +308,7 @@ class GCFBProcessor(OAFilterbank):
         audioChunk = data.received['timeseries']
         
         result=dict()
-        if not audioChunk == None:
+        if audioChunk is not None:
             self.logger.info('GCFBProcessor {0} processes data with startTime {1}' .format(self.name,self.currentTimeStamp))
             if not audioChunk.fs==self.config['SampleRate']:
                 self.logger.warning('Input sample rate {0} is different from output SampleRate setting {1}'

@@ -314,7 +314,7 @@ class Resampler(OAFilterbank):
         if(self.openResampler):
             data=dict()
             soundData = inputs.received['timeseries']
-            if not soundData==None:
+            if soundData is not None:
                 if not soundData.fs == self.config['SampleRate']:
                     self.logger.warning(
                     'Actual input sample rate {0} is different from set input sample rate {1}'

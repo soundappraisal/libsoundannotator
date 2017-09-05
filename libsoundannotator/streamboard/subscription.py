@@ -95,7 +95,7 @@ class NetworkConnection(NetworkMixin):
         gen = self.backoffGenerator()
         tries = 0
         while not self.connected:
-            if retries != None and tries > retries:
+            if retries is not None and tries > retries:
                 #here's when we stop
                 break
 
@@ -116,7 +116,7 @@ class NetworkConnection(NetworkMixin):
 
     """Initiate a poll on the socket's data status"""
     def poll(self, timeout=None):
-        if timeout == None:
+        if timeout is None:
             timeout = self.pollTimeout
         self.pollSockets(timeout)
         return self.hasData

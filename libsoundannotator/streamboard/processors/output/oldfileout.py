@@ -163,7 +163,7 @@ class FileOutputProcessor(processor.OutputProcessor):
                 #'escape' None or False to prevent crash
                 if type(val) == np.ndarray:
                     pass
-                elif val == False or val == None:
+                elif val is False or val is None:
                     val = str(val)
                 #set the meta data
                 self.h5pyf.attrs[key] = val

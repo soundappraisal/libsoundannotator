@@ -94,7 +94,7 @@ class MicInputProcessor(processor.InputProcessor):
 				raise e
 
 			#return early if we got nothing
-			if frames == None:
+			if frames is None:
 				return frames
 
 			#If in the previous chunk we got invalid continuity, mark this chunk as discontinuous

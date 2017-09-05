@@ -192,7 +192,7 @@ class patchProcessorCore(object):
     def processData(self, chunk):
         
         # Assuming the first data source is E
-        if (chunk==None):
+        if (chunk is None):
             pass
         else:
             self.logger.info('patchProcessorCore processData')

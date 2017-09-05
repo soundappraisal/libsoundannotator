@@ -37,7 +37,7 @@ def getLocation(metadata, config):
     return location
 
 def resolveDataFile(basedir, location, startNum=1, logger=None, forceNewFile=False, maxFileSize=104857600, fileExt='hdf5'):
-    if logger == None:
+    if logger is None:
         logger = multiprocessing.log_to_stderr()
         logger.setLevel(logging.INFO)
     # look if there are files with 'location' in their name in the basedir
@@ -86,7 +86,7 @@ def resolveDataFile(basedir, location, startNum=1, logger=None, forceNewFile=Fal
     return h5pyf
 
 def resolveOutdir(basedir, logger=None):
-    if logger == None:
+    if logger is None:
         logger = multiprocessing.log_to_stderr()
         logger.setLevel(logging.INFO)
     if not os.path.isdir(basedir):

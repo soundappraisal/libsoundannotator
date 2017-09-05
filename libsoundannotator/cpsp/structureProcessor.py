@@ -128,7 +128,7 @@ class structureProcessorCore(object):
 
     def processData(self, data):
         # Assuming the first data source is EdB
-        if (data.received['TSRep']==None):
+        if (data.received['TSRep'] is None):
              # This is important to do, prevents empty output publication.
             return None
             
@@ -291,7 +291,7 @@ class structureProcessorCalibratorCore(structureProcessorCore):
         result = None
         
         # Check whether the data source is timescale representation
-        if (data.received['TSRep']==None):
+        if (data.received['TSRep'] is None):
             return result
         
         

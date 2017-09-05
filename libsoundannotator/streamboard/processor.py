@@ -305,14 +305,14 @@ class InputProcessor(BaseProcessor):
                     metadata=None, identifier=None):
         #initialize chunk
         chunk = None
-        if identifier == None:
+        if identifier is None:
           identifier = self.__class__.__name__
 
 
         '''=== Some sanity checks to perform before publishing ==='''
         # If no data is given, return. This will prevent the system collapsing when a Processor
         # already has a check for subscriptions but chooses to continue anyway
-        if data == None:
+        if data is None:
             #self.logger.debug("Processor {0} published empty data".format(self.name))
             return
 

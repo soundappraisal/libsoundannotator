@@ -75,7 +75,7 @@ class PTN_Processor(processor.Processor):
 
   
     def getcontinuity(self):
-        if self.firstchunkinblock == None:
+        if self.firstchunkinblock is None:
             self.logger.error('getcontinuity called before stream was initialized')
             return Continuity.discontinuous
         else:
@@ -184,7 +184,7 @@ class PTN_Processor(processor.Processor):
 
         bandmeans=np.array(bandmeans)
 
-        if not normalization == None:
+        if normalization is not None:
             bandmeans=bandmeans/normalization
 
         return rangecompression(bandmeans)
@@ -227,7 +227,7 @@ class PTN_Processor(processor.Processor):
         if self.config['normalize']:
             bandmeansarguments['normalization']=Em
 
-        if not self.config['ptnreferencevalue'] == None:
+        if self.config['ptnreferencevalue'] is not None:
             Eo=Eo-self.config['ptnreferencevalue']
 
 
@@ -314,7 +314,7 @@ class PartialPTN_Processor(PTN_Processor):
         if self.config['normalize']:
             bandmeansarguments['normalization']=Em
 
-        if not self.config['ptnreferencevalue'] == None and 'energy' in self.featurenames:
+        if (self.config['ptnreferencevalue'] is not None) and ('energy' in self.featurenames):
             Eo=Eo-self.config['ptnreferencevalue']
 
         if 'energy' in self.featurenames:
