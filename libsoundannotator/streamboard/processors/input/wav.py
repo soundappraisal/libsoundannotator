@@ -121,7 +121,7 @@ class WavProcessor(processor.InputProcessor):
         elif frames.dtype == np.int32:
             noise=np.random.binomial(np.int32(addWhiteNoise), .5, size=frames.shape).astype(frames.dtype)-addWhiteNoise/2
         else:
-            noise=(addWhiteNoise * (np.random.rand(frames.shape)-0.5)).astype(frames.dtype)
+            noise=(addWhiteNoise * (np.random.rand(*frames.shape)-0.5)).astype(frames.dtype)
             
         return noise
         
