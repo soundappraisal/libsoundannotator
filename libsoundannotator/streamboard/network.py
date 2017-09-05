@@ -117,7 +117,7 @@ class NetworkMixin(object):
 		self._sockets = { sock.fileno(): sock }
 		#register the afterdataCallback
 		afterData = kwargs.get('afterdataCallback', None)
-		if afterData != None:
+		if afterData is not None:
 			self._logInfo("Registered afterdataCallback")
 			self._afterdataCallback = afterData
 

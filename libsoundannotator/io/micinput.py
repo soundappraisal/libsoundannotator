@@ -209,10 +209,10 @@ class MicInput(object):
 			#print("Too little, buffering")
 
 		#if needed, save remainder as new buffer
-		if remainder != None:
+		if remainder is not None:
 			self.buffer = remainder
 
-		if chunk != None:
+		if chunk is not None:
 			chunkStartTime=self.chunkStartTime
 			self.chunkStartTime+=np.float(self.readSize)/np.float(self.rate)
 
