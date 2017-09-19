@@ -195,7 +195,7 @@ class patchProcessorCore(object):
         if (chunk is None):
             pass
         else:
-            self.logger.info('patchProcessorCore processData')
+            self.logger.info('patchProcessorCore processData with shape {0}'.format(chunk.data.shape))
             self.newpatches(chunk.data)
             if(chunk.continuity>=Continuity.withprevious):
                 self.joinpatches()
@@ -264,8 +264,12 @@ class patchProcessor(Processor):
         self.patchProcessorCore.prerun()
 
     def processData(self,data ):
-        dataout=dict()
+        
         chunk=data.received['TSRep']
-        dataout['patches']=self.patchProcessorCore.processData(chunk)
-        dataout['levels']=self.patchProcessorCore.levels
+        if chunk is None or  chunk.data.shape[1]==0:
+            dataout=None
+        else:
+            dataout=dict()
+            dataout['patches']=self.patchProcessorCore.processData(chunk)
+            dataout['levels']=self.patchProcessorCore.levels
         return dataout
