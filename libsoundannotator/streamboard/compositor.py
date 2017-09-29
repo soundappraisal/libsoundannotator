@@ -384,7 +384,7 @@ class compositeManager(object):
                     else:
                         newdata=current_data[:,lowindices_drop:current_data_length-highindices_drop]
                 else:
-                    ValueError('compositeManager does not support numpy arrays of dimensions higher than 2')
+                    raise ValueError('compositeManager does not support numpy arrays of dimensions higher than 2')
                 
                 newChunk=DataChunk( newdata, 
                                     starttime, 
