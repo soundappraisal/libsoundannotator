@@ -245,7 +245,8 @@ class PTN_Processor(processor.Processor):
         super(PTN_Processor, self).publish(data, self.getcontinuity(), self.getstarttime(),self.getnumber(),generationTime, 
                     metadata, identifier)
                     
-        self.number+=1
+        if data is not None:
+            self.number += 1
 
 class PartialPTN_Processor(PTN_Processor):
 
