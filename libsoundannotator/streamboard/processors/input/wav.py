@@ -97,6 +97,10 @@ class WavProcessor(processor.InputProcessor):
     def generateData(self):
         frames = self.reader.readFrames(self.chunksize)
 
+        # when we cannot read a full chunk, set continuity to last
+        if len(frames) < self.chunksize:
+            self.continuity = Continuity.last
+
         # If specified, add some noise to prevent NaN from occuring due to log(E)
         if self.AddWhiteNoise:
             frames += self.generateWhitenoise(frames)
