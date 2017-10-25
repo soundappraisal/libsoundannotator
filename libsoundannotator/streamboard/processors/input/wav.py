@@ -64,8 +64,6 @@ class WavProcessor(processor.InputProcessor):
     def processSoundfile(self, soundfile):
         self.continuity = self.newFileContinuity
 
-        self.sources = set([soundfile.file_id])
-
         if soundfile.storagetype == 'wav':
             self.reader = WavChunkReader(soundfile.filehandle)
             self.oldchunk.metadata['file_id']=soundfile.file_id              # This fields is used to determine name of the outputfile in the FileWriter

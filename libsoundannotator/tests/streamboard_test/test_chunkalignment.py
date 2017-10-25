@@ -265,7 +265,7 @@ def test_online_processingflow():
                                 1449478633.333646+tsteps*delta_t,          #startTime, 
                                 fs,                      #fs, 
                                 processor_name,             #processorName, 
-                                set([tested_processor_name,'microphone',]),      #sources, 
+                                set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
                                 alignment=chunkAlignment(*alignmentC) ,#optional: alignment=chunkAlignment(), 

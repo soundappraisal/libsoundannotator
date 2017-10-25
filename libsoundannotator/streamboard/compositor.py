@@ -267,7 +267,7 @@ class compositeManager(object):
         
         
     def mergeSources(self, index):
-        sources=set([self.processor.name,])
+        sources=set()
         compositechunk=self.compositeChunkList[index]
         for key in self.requiredKeys:
             chunk=compositechunk.received[key]
