@@ -25,7 +25,7 @@ import libsoundannotator.streamboard as streamboard
 
 
 from libsoundannotator.streamboard               import processor
-from libsoundannotator.streamboard.continuity    import Continuity
+from libsoundannotator.streamboard.continuity    import Continuity, chunkAlignment, processorAlignment
 
 import scipy.signal as sig
 import sys
@@ -92,6 +92,8 @@ class OAFilterbank(processor.Processor):
         else: # len(np.shape(filter_t)) > 2:
             raise ValueError('Input filter should be a 1D or 2D vector')
         self.firstBlock = True
+        
+        self.setProcessorAlignments()
 
     def reset(self):
         self.logger.info('{0}:Reset OAFilter buffer'.format(self.name))
@@ -214,6 +216,16 @@ class OAFilterbank(processor.Processor):
                 discardFirstBlock = False
         
         return result
+        
+   
+       
+    def setProcessorAlignments(self):        
+        ''' 
+        setProcessorAlignments: this function should set the dictionary self.processorAlignments. 
+        
+        minimal implementation: self.processorAlignments=dict()
+        '''
+        self.overrideError('OAFilterbank::setProcessorAlignments')
 
 
 
@@ -231,7 +243,10 @@ class Resampler(OAFilterbank):
             FilterLength=60,
             DecimateFactor=5
         )
-
+        
+        if not self.config['FilterLength'] % self.config['DecimateFactor'] == 0:
+            raise ValueError('FilterLength should be an integer multiple of DecimateFactor') 
+        
         self.config['OutputSampleRate'] = self.config['SampleRate']/float(self.config['DecimateFactor'])
         # Create a low-pass filter
         normalizedCutoff = (float(self.config['OutputSampleRate']))/float(self.config['SampleRate'])
@@ -260,6 +275,7 @@ class Resampler(OAFilterbank):
     def getsamplerate(self,key):
         return self.config['OutputSampleRate']
     
+    '''
     def sample_up( self,signal, upfactor):
 
         if(not isinstance(signal,np.ndarray)):
@@ -282,6 +298,7 @@ class Resampler(OAFilterbank):
             upsampledsignal[:,slice(None,None,upfactor)]=signal
         
         return upsampledsignal
+    '''
         
     def decimate(self,signal,downfactor):
 
@@ -305,9 +322,38 @@ class Resampler(OAFilterbank):
         return downsampledsignal      
 
 
+         
+    def setProcessorAlignments(self): 
+        '''
+         setProcessorAlignments: set processorAlignment for the Resampler
+         
+         droppedAfterDiscontinuity: non-zero because of the signal only being 
+         available after on filterlength which after decimation becomes 
+         filterlength/decimation.
+         
+         There is a potentially a small error in includedPast if the 
+         chunk size is not a multiple of decimation, this error is 
+         smaller than a sample after decimation and will for now be 
+         ignored. It can not be fixed in the alignment parameters which 
+         are integer by definition. 
+        '''
+        self.processorAlignments=dict()
+        includedPast=0
+        droppedAfterDiscontinuity=np.int(self.config['FilterLength']/self.config['DecimateFactor'])
+        invalidLargeScales=0
+        invalidSmallScales=0
+        alignable=True
+        fsampling=self.getsamplerate('timeseries')
+        processoralignment=processorAlignment(  includedPast=includedPast , 
+                                        droppedAfterDiscontinuity=droppedAfterDiscontinuity , 
+                                        invalidLargeScales=invalidLargeScales , 
+                                        invalidSmallScales=invalidSmallScales, 
+                                        alignable=alignable, 
+                                        fsampling=fsampling)
+        
+        
+    
+        self.processorAlignments['timeseries']=processoralignment
 
-
-
-
-
+    
 

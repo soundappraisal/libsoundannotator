@@ -54,6 +54,7 @@ class NoiseChunkGenerator(processor.InputProcessor):
             if(len(self.subscriptions) >0):
                 subscription = True
         self.startframe=0
+        self.setProcessorAlignments()
 
     def generateData(self):
         data=None
@@ -82,3 +83,10 @@ class NoiseChunkGenerator(processor.InputProcessor):
 
         time.sleep(0.05)
         return dataout
+
+        
+    def setProcessorAlignments(self): 
+        '''
+         setProcessorAlignments: assign empty dict to self.processorAlignments   
+        '''
+        self.processorAlignments=dict()

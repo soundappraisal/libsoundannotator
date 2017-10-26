@@ -241,16 +241,20 @@ class compositeManager(object):
         return continuity, chunkcontinuity
     
     def calculateAlignment(self,index):
-        alignment_in=chunkAlignment()
+        alignment_in=None
         alignments_out=dict()
         
         compositechunk=self.compositeChunkList[index]
         for key in self.requiredKeys:
             chunk=compositechunk.received[key]
-            alignment_in=alignment_in.merge(chunk.alignment)
+            if alignment_in  is None:
+                alignment_in=chunk.alignment.copy()
+            else:
+                alignment_in=alignment_in.merge(chunk.alignment)
         
-       
         for key in self.processor.processorAlignments:
+            self.processor.logger.info('key in empty dict {0}'.format(key))
+            time.sleep(0.01)
             alignment=alignment_in.impose_processor_alignment(self.processor.processorAlignments[key])
             alignments_out[key]=alignment
         

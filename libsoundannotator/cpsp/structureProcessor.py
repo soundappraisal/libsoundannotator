@@ -170,11 +170,13 @@ class structureProcessor(Processor):
     requiredKeys=['TSRep']
     def __init__(self,boardConn, name,*args, **kwargs):
         super(structureProcessor, self).__init__(boardConn, name,*args, **kwargs)
+        self.requiredParameters('SampleRate')
         self.requiredParametersWithDefault(noofscales=100,maxdelay=20)
         self.args=args
         self.kwargs=kwargs
         self.kwargs['noofscales']=self.config['noofscales']
         self.kwargs['maxdelay']=self.config['maxdelay']
+        self.samplerate=self.config['SampleRate']
         
     def prerun(self):
         self.prerunsuper()
@@ -182,7 +184,7 @@ class structureProcessor(Processor):
         self.kwargs['name']=self.name
         self.structureProcessorCore=structureProcessorCore(*self.args,**self.kwargs)
         self.structureProcessorCore.prerun()
-        self.setAlignments()
+        self.setProcessorAlignments()
 
     def prerunsuper(self):
         super(structureProcessor, self).prerun()
@@ -190,9 +192,12 @@ class structureProcessor(Processor):
     def processData(self, data):
         return self.structureProcessorCore.processData(data)
 
-
-    def setAlignments(self):
-        
+    
+    def getsamplerate(self,key):
+         return self.samplerate
+         
+    def setProcessorAlignments(self):
+        self.processorAlignments=dict()
         for textureType in self.structureProcessorCore.textureTypes:
             
                                            
@@ -215,15 +220,21 @@ class structureProcessor(Processor):
             invalidLargeScales=scaleoffsets[1]
             
             self.processorAlignments[self.structureProcessorCore.senderKeysT[textureType]]=processorAlignment(
-                invalidSmallScales=invalidSmallScales, invalidLargeScales=invalidLargeScales,
-                includedPast=includedPast, droppedAfterDiscontinuity=droppedAfterDiscontinuity
+                invalidSmallScales=invalidSmallScales, 
+                invalidLargeScales=invalidLargeScales,
+                includedPast=includedPast, 
+                droppedAfterDiscontinuity=droppedAfterDiscontinuity,
+                fsampling=self.getsamplerate(self.structureProcessorCore.senderKeysP[textureType])
             )
             
             invalidLargeScales=scaleoffsets[1]
             invalidSmallScales=scaleoffsets[0]
             self.processorAlignments[self.structureProcessorCore.senderKeysP[textureType]]=processorAlignment(
-                invalidSmallScales=invalidSmallScales, invalidLargeScales=invalidLargeScales,
-                includedPast=includedPast, droppedAfterDiscontinuity=droppedAfterDiscontinuity
+                invalidSmallScales=invalidSmallScales, 
+                invalidLargeScales=invalidLargeScales,
+                includedPast=includedPast, 
+                droppedAfterDiscontinuity=droppedAfterDiscontinuity, 
+                fsampling=self.getsamplerate(self.structureProcessorCore.senderKeysP[textureType])
             )
 
 
@@ -324,7 +335,18 @@ class structureProcessorCalibrator(structureProcessor):
         self.kwargs['name']=self.name
         self.structureProcessorCore=structureProcessorCalibratorCore(*self.args,**self.kwargs)
         self.structureProcessorCore.prerun()
+        self.setProcessorAlignments()
 
     def processData(self, data):
         return self.structureProcessorCore.processData(data)
         
+       
+    def setProcessorAlignments(self):        
+        ''' 
+        setProcessorAlignments: set the dictionary 
+        self.processorAlignments. 
+        
+        Part of the calibration is aimed at finding these parameters. 
+        To keep going we initialize to an empty dictionary.
+        '''
+        self.processorAlignments=dict()

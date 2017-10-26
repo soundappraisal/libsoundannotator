@@ -23,6 +23,9 @@ import math
 import sys
 from oafilterbank_numpy import OAFilterbank
 
+from libsoundannotator.streamboard.continuity    import Continuity, chunkAlignment, processorAlignment
+
+
 import time
 import os
 from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment, tostring
@@ -65,6 +68,7 @@ class GCFilterBank(object):
         'fmax': 4000,
         'desiredT': 0.1,
         'SampleRate': 8000,
+        'samplesPerFrame': 5,
         'n': 4,
         'B': (2.02*0.35*0.1039*0.75),
         'C': (2.02*0.35*24.7),
@@ -156,6 +160,7 @@ class GCFilterBank(object):
         fmin = self.config['fmin']
         fmax = self.config['fmax']
         desiredT = self.config['desiredT']
+        decimation = self.config['samplesPerFrame']
         fs = self.config['SampleRate']
         n = self.config['n']
         B = self.config['B']
@@ -163,7 +168,7 @@ class GCFilterBank(object):
         ch = self.config['ch']
 
         # Length of gamma chirp in frames
-        chirpLength = round(fs*desiredT)
+        chirpLength = (np.floor(fs*desiredT/decimation).astype(int)+1)*decimation
 
         # tmax is real length of impulse response in seconds
         tmax = chirpLength / float(fs)
@@ -261,6 +266,7 @@ class GCFBProcessor(OAFilterbank):
         super(GCFBProcessor, self).prerun()
         if self.xmloutput:
             self.writexml()
+        self.setProcessorAlignments()
 
     def writexml(self):
         xmlmetafile=open(self.xmlmetafilename,'w+')
@@ -336,3 +342,41 @@ class GCFBProcessor(OAFilterbank):
 
     def getsamplerate(self,key):
         return self.config['SampleRate']/self.GCConfig['samplesPerFrame']
+        
+        
+
+         
+    def setProcessorAlignments(self): 
+        '''
+         setProcessorAlignments: set processorAlignment for the 
+         Resampler  
+         
+         droppedAfterDiscontinuity: non-zero because of the 
+         signal only being available after on filterlength which after 
+         decimation by samplesPerFrame becomes filterlength/decimation.  
+         
+         There is a potentially a small error in includedPast if the 
+         chunk size is not a multiple of decimation, this error is 
+         smaller than a sample after decimation and will for now be 
+         ignored. It can not be fixed in the alignment parameters which 
+         are integer by definition. 
+        '''
+        self.processorAlignments=dict()
+        includedPast=0
+        droppedAfterDiscontinuity=np.int(self.factory.getChirpLength()/self.config['samplesPerFrame'])
+        invalidLargeScales=0
+        invalidSmallScales=0
+        alignable=True
+        fsampling=self.getsamplerate('E')
+        processoralignment=processorAlignment(  includedPast=includedPast , 
+                                        droppedAfterDiscontinuity=droppedAfterDiscontinuity , 
+                                        invalidLargeScales=invalidLargeScales , 
+                                        invalidSmallScales=invalidSmallScales, 
+                                        alignable=alignable, 
+                                        fsampling=fsampling)
+        
+        
+    
+        self.processorAlignments['E']=processoralignment
+        self.processorAlignments['EdB']=processoralignment
+

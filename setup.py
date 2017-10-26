@@ -16,6 +16,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+The build is nearly fully automatic. For changes to the interface 
+linking Python with the C++ modules (at time of writing: 
+_structureExtractor,_patchExtractor) rerunning of SWIG will be 
+necessary. For ease of distribution the SWIG generated Python and C++ 
+code is included in the source tree. 
+
 '''
 from setuptools import setup, find_packages, Extension
 from distutils.util import get_platform
@@ -93,6 +100,8 @@ ext_modules.append(
                             )
                 )
 
+
+
 if __name__ == "__main__":
     setup(
         name='libSoundAnnotator',
@@ -102,15 +111,16 @@ if __name__ == "__main__":
         long_description=read('README'),
         author='Ronald van Elburg, Coen Jonker, Arryon Tijsma',
         author_email='r.a.j.van.elburg@soundappraisal.eu',
-        download_url='--tba--',
+        license='Apache License, Version 2.0',
+        download_url='https://github.com/soundappraisal/libsoundannotator',    
+        platforms=get_platform(),  
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Environment :: Console',
             'Intended Audience :: Science/Research/Education',
-            'License :: Other/Proprietary License',
             'Natural Language :: English',
-            'Operating System :: OS Independent',
-            'Programming Language :: Python/C++',
+            'Operating System :: Linux',
+            'Programming Language :: Python/C++/SWIG',
             'Topic :: Scientific/Engineering :: Computational Auditory Scene Analysis'
         ],
         install_requires=required_packages,

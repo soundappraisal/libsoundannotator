@@ -18,7 +18,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from libsoundannotator.streamboard               import processor
-from libsoundannotator.streamboard.continuity    import Continuity
+from libsoundannotator.streamboard.continuity    import Continuity, processorAlignment
 from libsoundannotator.io.oldstorage             import StorageFormatterFactory
 
 import os, time, glob, sys, datetime
@@ -32,7 +32,7 @@ class FileOutputProcessor(processor.OutputProcessor):
         super(FileOutputProcessor, self).__init__(*args, **kwargs)
         #set required keys to subscription keys, or to empty list
         self.requiredKeys = kwargs.get('requiredKeys', self.requiredKeys)
-        self.requiredParameters('outdir', 'classType', 'maxFileSize')
+        self.requiredParameters('outdir', 'classType', 'maxFileSize','SampleRate')
         self.requiredParametersWithDefault(
             outdir = os.path.join(os.path.expanduser("~"), "data", "libsoundannotator"),
             classType = "HDF5Storage",
@@ -40,7 +40,8 @@ class FileOutputProcessor(processor.OutputProcessor):
             datatype = 'int16',
             usewavname=False,
         )
-
+        
+        self.samplerate=self.config['SampleRate']
         self.fileExt = 'hdf5'
         self.startNum = 1
 
@@ -57,6 +58,7 @@ class FileOutputProcessor(processor.OutputProcessor):
         self.storageformatter = StorageFormatterFactory.getInstance(self.config["classType"])
         basedir = os.path.join(self.config['outdir'], self.storageformatter.foldername)
         self.outdir = util.resolveOutdir(basedir)
+        self.setProcessorAlignments()
 
     def processData(self, compositeChunk):
         metadata = compositeChunk.metadata
@@ -181,3 +183,19 @@ class FileOutputProcessor(processor.OutputProcessor):
         #every 100 chunks, add the generation time to the first sample of the new chunk
         if chunk.number % 100 == 0:
             dset.attrs.create(str(dset.shape[shapeDim] + 1), str(chunk.dataGenerationTime))
+
+
+    
+    def getsamplerate(self,key):
+         return self.samplerate
+        
+    def setProcessorAlignments(self):        
+        ''' 
+        setProcessorAlignments: set self.processorAlignments to empty dictionary
+        
+        This is an output processor. So no 
+        subscriptions and hence no keys for which we can set the 
+        processor alignment. 
+        '''
+        self.processorAlignments=dict()
+        #self.processorAlignments['dummy']=processorAlignment(fsampling=self.getsamplerate('dummy'))

@@ -74,6 +74,16 @@ class chunkAlignment(object):
         self.invalidSmallScales=invalidSmallScales
         self.alignable=alignable
         self.fsampling=fsampling
+    
+    def copy(self):
+        return chunkAlignment(
+            self.includedPast,
+            self.droppedAfterDiscontinuity,
+            self.invalidLargeScales,
+            self.invalidSmallScales,
+            self.alignable,
+            self.fsampling,
+        )
         
 
     def merge(self,other):
@@ -89,13 +99,13 @@ class chunkAlignment(object):
         droppedAfterDiscontinuity=max(self.droppedAfterDiscontinuity,other.droppedAfterDiscontinuity)
         invalidLargeScales=max(self.invalidLargeScales,other.invalidLargeScales)
         invalidSmallScales=max(self.invalidSmallScales,other.invalidSmallScales)
-            
+        fsampling=self.fsampling
         
         return chunkAlignment(  includedPast=includedPast,
                                 droppedAfterDiscontinuity=droppedAfterDiscontinuity,
                                 invalidLargeScales=invalidLargeScales,
                                 invalidSmallScales=invalidSmallScales,
-                                
+                                fsampling=fsampling,
                                 )
 
     
@@ -104,14 +114,23 @@ class chunkAlignment(object):
         
         if(type(processor_alignment)==processorAlignment):
             #raise TypeError('self.includedPast{0},processor_alignment.includedPast: {1}'.format(type(self.includedPast),type(processor_alignment.includedPast)))
-            includedPast=self.includedPast+processor_alignment.includedPast
-            droppedAfterDiscontinuity=self.droppedAfterDiscontinuity+processor_alignment.droppedAfterDiscontinuity
+            
+            if self.fsampling == processor_alignment.fsampling:
+                includedPast=self.includedPast+processor_alignment.includedPast
+                droppedAfterDiscontinuity=self.droppedAfterDiscontinuity+processor_alignment.droppedAfterDiscontinuity
+            else:
+                includedPast=int((self.includedPast*processor_alignment.fsampling)/self.fsampling)+processor_alignment.includedPast
+                droppedAfterDiscontinuity=int((self.droppedAfterDiscontinuity*processor_alignment.fsampling)/self.fsampling)+processor_alignment.droppedAfterDiscontinuity
+                
             invalidLargeScales=self.invalidLargeScales+processor_alignment.invalidLargeScales
             invalidSmallScales=self.invalidSmallScales+processor_alignment.invalidSmallScales
+            fsampling=processor_alignment.fsampling
+                
             return chunkAlignment(  includedPast=includedPast,
                                     droppedAfterDiscontinuity=droppedAfterDiscontinuity,
                                     invalidLargeScales=invalidLargeScales,
-                                    invalidSmallScales=invalidSmallScales)
+                                    invalidSmallScales=invalidSmallScales,
+                                    fsampling=fsampling)
         else:
             raise TypeError('Trying to impose non processorAlignment. Probably you want merge to chunkAlignment objects. ')
     

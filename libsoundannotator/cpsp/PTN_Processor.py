@@ -23,7 +23,7 @@ import libsoundannotator.cpsp        as cpsp
 
 
 from libsoundannotator.streamboard                import processor
-from libsoundannotator.streamboard.continuity     import Continuity
+from libsoundannotator.streamboard.continuity     import Continuity, processorAlignment
 from libsoundannotator.streamboard.compositor        import DataChunk
 
 from libsoundannotator.cpsp.structureProcessor    import  structureProcessorCore
@@ -60,6 +60,7 @@ class PTN_Processor(processor.Processor):
 
         self.fs=self.config['SampleRate']
         self.blockwidth=int(np.ceil(self.config['blockwidth']*self.config['SampleRate']))
+        self.fs_out = 1./self.config['blockwidth']
         self.number=self.config['firstpublished']
         
         self.resetblockbuffer()
@@ -72,6 +73,7 @@ class PTN_Processor(processor.Processor):
         
         self.resetfirstchunkinblock=True
         self.firstchunkinblock=None
+        self.setProcessorAlignments()
 
   
     def getcontinuity(self):
@@ -247,6 +249,21 @@ class PTN_Processor(processor.Processor):
                     
         if data is not None:
             self.number += 1
+            
+            
+    
+    def getsamplerate(self,key):
+         return self.fs_out
+        
+    def setProcessorAlignments(self):        
+        ''' 
+        setProcessorAlignments: set the dictionary self.processorAlignments. 
+        
+        '''
+        self.processorAlignments=dict()
+        
+        for featureName in self.featurenames: 
+            self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName))
 
 class PartialPTN_Processor(PTN_Processor):
 
