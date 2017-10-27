@@ -76,9 +76,9 @@ class ScenarioLine(DataChunk):
             
         if alignment is None:
             if inout =='in':
-                alignment = chunkAlignment()
+                alignment = chunkAlignment(fsampling=fs)
             elif  inout =='out':
-                alignment = processorAlignment()
+                alignment = processorAlignment(fsampling=fs)
             
             
         super(ScenarioLine, self).__init__(data, startTime, fs, 
@@ -87,7 +87,8 @@ class ScenarioLine(DataChunk):
                             alignment=alignment, 
                             dataGenerationTime=dataGenerationTime, 
                             identifier=identifier, 
-                            metadata=metadata,**kwargs)
+                            metadata=metadata,
+                            **kwargs)
         
       
         
@@ -137,6 +138,7 @@ class Scenario(object):
         # Chunk variables implicitly defined through the processor
         #   scenarioline.sources         # set via subscriptions when starting the processor
         #   scenarioline.alignment       # getAlignment creates a default chunkAlignment with all alignment parameters set to zero
+        
         scenarioline.processorinstance.processorAlignments[scenarioline.featurename]=scenarioline.alignment 
         
         # Chunk variables set by providing them as argument to the publish method
@@ -192,7 +194,7 @@ class ChunkEmitter(processor.Processor):
         self.requiredParametersWithDefault(requiredKeys=[], processoralignment=dict())
         self.requiredKeys=self.config['requiredKeys']
         
-        self.processoralignment=self.config['processoralignment']     
+        self.processorAlignments=self.config['processoralignment']   
         
         if onBoard:
             self.prepare_processor()
@@ -202,22 +204,21 @@ class ChunkEmitter(processor.Processor):
     
     def prerun(self):
         super(ChunkEmitter, self).prerun()
-        self.processorAlignments=dict()
+                
         alignments_out=dict()
-                    
-        for key in  self.processoralignment:
-            self.processorAlignments[key]=processorAlignment(*self.processoralignment[key])
             
-        alignment_in=chunkAlignment()
         for key in self.processorAlignments:
-            alignment=alignment_in.impose_processor_alignment(self.processorAlignments[key])
-            alignments_out[key]=alignment
+            self.logger.info('processorAlignments type: {0} value: {1}'.format(type(self.processorAlignments[key]),self.processorAlignments[key]))
+       
+            alignments_out[key]=self.processorAlignments[key].copy()
+            
+        self.compositeManager.alignments_out=alignments_out
+ 
         
-        self.compositeManager.alignments_out=alignments_out   
         
     def prepare_processor(self):
         self.prerun()
-        self.logger.info('Processor {0} started'.format(self.name))            
+             
         
     def getcontinuity(self):
         return self.debugcontinuity
@@ -234,7 +235,7 @@ class CompositeTester(processor.Processor):
         
         self.requiredParametersWithDefault(requiredKeys=[], processoralignment=dict())
         self.requiredKeys=self.config['requiredKeys']
-        self.processoralignment=self.config['processoralignment']
+        self.processorAlignments=self.config['processoralignment']
         
         
        
@@ -248,19 +249,13 @@ class CompositeTester(processor.Processor):
     def prerun(self):
         super(CompositeTester, self).prerun()
         
-        
-        self.processorAlignments=dict()
         alignments_out=dict()
-        
-        for key in self.processoralignment:
-            self.processorAlignments[key]=processorAlignment(*self.processoralignment[key])
             
-        alignment_in=chunkAlignment()
         for key in self.processorAlignments:
-            alignment=alignment_in.impose_processor_alignment(self.processorAlignments[key])
-            alignments_out[key]=alignment
-        
+            alignments_out[key]=self.processorAlignments[key].copy()
+            
         self.compositeManager.alignments_out=alignments_out
+ 
          
     
     '''

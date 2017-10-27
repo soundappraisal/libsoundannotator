@@ -171,7 +171,10 @@ def test_online_processingflow():
     il1=0 ;   il2=5;  il3=0
     is1=0 ;   is2=7;  is3=0
     
-    processoralignment_AB_Test={'A':(ip1,d1,il1,is1),'B':(ip2,d2,il2,is2)}
+     
+    fs=41000
+    
+    processoralignment_AB_Test={'A':processorAlignment(ip1,d1,il1,is1,fsampling=fs),'B':processorAlignment(ip2,d2,il2,is2,fsampling=fs)}
     
     testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, processoralignment=processoralignment_AB_Test,onBoard=True)
     scenario_processor=testboard.processors[processor_name][0]
@@ -186,8 +189,7 @@ def test_online_processingflow():
     
     time.sleep(0.05)
     
-    
-    fs=41000
+   
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -242,7 +244,7 @@ def test_online_processingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=processorAlignment(*alignmentA) ,#optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(*alignmentA,fsampling=fs) ,#optional: alignment=processorAlignment(), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -255,7 +257,7 @@ def test_online_processingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=processorAlignment(*alignmentB) ,#optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(*alignmentB,fsampling=fs) ,#optional: alignment=processorAlignment(), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -268,7 +270,7 @@ def test_online_processingflow():
                                 set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(*alignmentC) ,#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(*alignmentC,fsampling=fs) ,#optional: alignment=chunkAlignment(), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -278,7 +280,7 @@ def test_online_processingflow():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'ExT':(ip3,d3,il3,is3)},
+                            processoralignment={'ExT':processorAlignment(ip3,d3,il3,is3,fsampling=fs)},
                             requiredKeys=['A','B'] )
     
    

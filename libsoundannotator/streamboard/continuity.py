@@ -115,6 +115,9 @@ class chunkAlignment(object):
         if(type(processor_alignment)==processorAlignment):
             #raise TypeError('self.includedPast{0},processor_alignment.includedPast: {1}'.format(type(self.includedPast),type(processor_alignment.includedPast)))
             
+            if self.fsampling is None:
+                raise ValueError('fsampling should be set on processor {0} for key {1}'.format('unknown','unknown'))
+            
             if self.fsampling == processor_alignment.fsampling:
                 includedPast=self.includedPast+processor_alignment.includedPast
                 droppedAfterDiscontinuity=self.droppedAfterDiscontinuity+processor_alignment.droppedAfterDiscontinuity
@@ -156,10 +159,19 @@ class chunkAlignment(object):
         return ret
             
     def __str__(self):
-        return '\n\t includedPast: {0}\n\t droppedAfterDiscontinuity: {1}\n\t invalidLargeScales: {2}\n\t invalidSmallScales: {3}\n\t alignable: {4}'.format(  self.includedPast,self.droppedAfterDiscontinuity,
+        return '\n\t includedPast: {0}\n\t droppedAfterDiscontinuity: {1}\n\t invalidLargeScales: {2}\n\t invalidSmallScales: {3}\n\t alignable: {4},\n\t fsampling {5},\n\t type: {6}'.format(  self.includedPast,self.droppedAfterDiscontinuity,
         self.invalidLargeScales,self.invalidSmallScales,
-        self.alignable)
+        self.alignable, self.fsampling, type(self))
     
 
 class processorAlignment(chunkAlignment):
-    pass
+    
+    def copy(self):
+        return processorAlignment(
+            self.includedPast,
+            self.droppedAfterDiscontinuity,
+            self.invalidLargeScales,
+            self.invalidSmallScales,
+            self.alignable,
+            self.fsampling,
+        )

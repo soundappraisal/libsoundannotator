@@ -77,7 +77,8 @@ class compositeChunk(object):
                     startTime=None,
                     dataGenerationTime=None,
                     metadata=None,
-                    identifier=None):
+                    identifier=None,
+                    initialSampleTime=None):
                         
         self.status=compositeChunk.incomplete
         
@@ -87,6 +88,7 @@ class compositeChunk(object):
         
         # used in processData by certain procesors
         self.startTime=startTime
+        self.initialSampleTime=initialSampleTime
         self.dataGenerationTime=dataGenerationTime
         self.metadata=metadata
         self.identifier=identifier
@@ -187,7 +189,10 @@ class compositeManager(object):
         
         dataGenerationTime,metadata,identifier      = self.fuseMetadata(index)
         
-        compositechunk=self.alignIncomingChunks(index, continuity, chunkcontinuity, starttime, dataGenerationTime,metadata, identifier)
+        initialSampleTime = self.calculateInitialSampleTime(index,continuity, chunkcontinuity,starttime)
+        
+        
+        compositechunk=self.alignIncomingChunks(index, continuity, chunkcontinuity, starttime, dataGenerationTime,metadata, identifier, initialSampleTime)
         
         data=self.processor.processData(compositechunk)   # This is where the processor is called to do the real work.
         
@@ -204,9 +209,15 @@ class compositeManager(object):
         )
         self.processor.logger.debug("Called publish on processor")
 
+                
+        
         
     def calculateContinuity(self,index):
         '''
+            calculateContinuity(self,index):
+            
+            Calculate continuity of the incoming and outgoing chunks.
+            
             There is a dangerous aspect to this calculation, in principle  continuity is propagated,
             if however different representations disagree on the continuity the resulting continuity is not well defined.
             Because in general all inherit continuity from the injected sound they all carry the same continuity.
@@ -253,8 +264,13 @@ class compositeManager(object):
                 alignment_in=alignment_in.merge(chunk.alignment)
         
         for key in self.processor.processorAlignments:
-            self.processor.logger.info('key in empty dict {0}'.format(key))
-            time.sleep(0.01)
+            
+            if self.processor.processorAlignments[key].fsampling is None:
+                raise ValueError('cA fsampling should be set on processor {0} for key {1}'.format(self.processor.name,key))
+            self.processor.logger.error('========== cA type of fsampling: {0} and value {1}'.format(type(self.processor.processorAlignments[key].fsampling),self.processor.processorAlignments[key].fsampling))
+            self.processor.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.processor.processorAlignments[key] ),self.processor.processorAlignments[key] ))
+            self.processor.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processor.processorAlignments),self.processor.processorAlignments ))
+    
             alignment=alignment_in.impose_processor_alignment(self.processor.processorAlignments[key])
             alignments_out[key]=alignment
         
@@ -327,10 +343,10 @@ class compositeManager(object):
             
         return dataGenerationTime,metadata,identifier
         
-    def alignIncomingChunks(self,index, continuity, chunkcontinuity, starttime, dataGenerationTime,metadata, identifier):
+    def alignIncomingChunks(self,index, continuity, chunkcontinuity, starttime, dataGenerationTime,metadata, identifier,initialSampleTime):
         current_composite       = self.compositeChunkList[index]
         previous_composite      = self.lastcompleted
-        to_processor_composite  = compositeChunk(current_composite.number, self.requiredKeys, starttime, dataGenerationTime, metadata, identifier)
+        to_processor_composite  = compositeChunk(current_composite.number, self.requiredKeys, starttime, dataGenerationTime, metadata, identifier,initialSampleTime)
         
         
         
@@ -364,28 +380,26 @@ class compositeManager(object):
                 self.processor.logger.info("          dimension {0}".format(dimension))
                 
                 
-                
-                
                 if dimension == 1:
-                    if continuity >= Continuity.withprevious:
+                    if continuity >= Continuity.withprevious:                   # Regular Continuous Case
                         previous_data=previous_composite.received[key].data
                         previous_data_shape=np.shape(previous_data)
                         previous_data_length=previous_data_shape[-1]
                         
                         newdata=np.concatenate((previous_data[previous_data_length-highindices_drop:],current_data[:current_data_length-highindices_drop]))
-                    elif current_chunk.continuity >= Continuity.withprevious:
+                    elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
                         newdata=current_data[chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this chunk been discontinuous and the part shaved of if it had been discontinuous.
-                    else:
+                    else:                                                       # Regular Discontinuous Case
                         newdata=current_data[lowindices_drop:current_data_length-highindices_drop]
                 elif dimension == 2:
-                    if continuity >= Continuity.withprevious:
+                    if continuity >= Continuity.withprevious:                   # Regular Continuous Case
                         previous_data=previous_composite.received[key].data
                         previous_data_shape=np.shape(previous_data)
                         previous_data_length=previous_data_shape[-1]
                         newdata=np.concatenate((previous_data[:,previous_data_length-highindices_drop:],current_data[:,:current_data_length-highindices_drop]), axis=1)
-                    elif current_chunk.continuity >= Continuity.withprevious:
+                    elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
                         newdata=current_data[:,chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this stream been discontinuous and the part shaved of it it had been discontinuous.
-                    else:
+                    else:                                                       # Regular Discontinuous Case
                         newdata=current_data[:,lowindices_drop:current_data_length-highindices_drop]
                 else:
                     raise ValueError('compositeManager does not support numpy arrays of dimensions higher than 2')
@@ -427,7 +441,30 @@ class compositeManager(object):
         return to_processor_composite
         
         
-  
+
+    def calculateInitialSampleTime(self,index,continuity, chunkcontinuity,starttime):
+        '''
+        calculateInitialSampleTime(self,index,continuity, chunkcontinuity,starttime):
+        
+        Return the time of the first sample in the aligned data of the incoming chunks
+        '''
+        
+        InitialSampleTime=starttime
+        
+        self.processor.logger.error('========== type of fsampling: {0} and value {1}'.format(type(self.alignment_in.fsampling),self.alignment_in.fsampling))
+        self.processor.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.alignment_in ),self.alignment_in ))
+        self.processor.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processor.processorAlignments),self.processor.processorAlignments ))
+        
+        fsampling=float(self.alignment_in.fsampling) # cast to float to force non integer division in the following
+        
+        if continuity >= Continuity.withprevious:                           # Regular Continuous Case
+            InitialSampleTime-=self.alignment_in.includedPast/fsampling
+        elif chunkcontinuity >= Continuity.withprevious:           # Irregular Discontinuous Case
+            InitialSampleTime+=self.alignment_in.droppedAfterDiscontinuity/fsampling
+        else:                                                               # Regular Discontinuous Case
+            InitialSampleTime+=self.alignment_in.droppedAfterDiscontinuity/fsampling
+            
+        return InitialSampleTime
         
         
         
