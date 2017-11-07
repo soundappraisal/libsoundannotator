@@ -18,9 +18,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from setuptools import setup, find_packages, Extension
-from distutils.util import get_platform
+import pkg_resources
+import textwrap
 import os, sys
-import numpy as np
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -28,6 +28,24 @@ import numpy as np
 # string in below ...
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+def is_installed(requirement):
+    try:
+        pkg_resources.require(requirement)
+    except pkg_resources.ResolutionError:
+        return False
+    else:
+        return True
+
+if not is_installed('numpy>=1.11.0'):
+    print(textwrap.dedent("""
+            Error: numpy needs to be installed first. You can install it via:
+
+            $ pip install numpy>=1.11.0
+            """))
+    sys.exit(1)
+
+import numpy as np
 
 # Generate meta-data for Git
 from libsoundannotator.config.generateMetaData import generateMetaData
