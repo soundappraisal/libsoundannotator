@@ -46,10 +46,7 @@ class FileOutputProcessor(processor.OutputProcessor):
 
     def finalize(self):
         self.logger.info("Finalize in FileOutputProcessor")
-        if self.h5pyf:
-            self.logger.info("Flushing and closing file handler")
-            self.h5pyf.flush()
-            self.h5pyf.close()
+        self.flushAndClose()
 
     def prerun(self):
         super(FileOutputProcessor, self).prerun()
@@ -93,9 +90,7 @@ class FileOutputProcessor(processor.OutputProcessor):
         #close handle to prevent corruption
         self.logger.info('Closing h5py handle')
         
-        if self.h5pyf:
-            self.h5pyf.flush()
-            self.h5pyf.close()
+        self.flushAndClose()
 
     def addChunkToDataset(self, h5pyf, key, chunk):
         maxshape = (None,)
@@ -181,3 +176,8 @@ class FileOutputProcessor(processor.OutputProcessor):
         #every 100 chunks, add the generation time to the first sample of the new chunk
         if chunk.number % 100 == 0:
             dset.attrs.create(str(dset.shape[shapeDim] + 1), str(chunk.dataGenerationTime))
+    
+    def flushAndClose(self):
+        if getattr(self, 'h5pyf', None) is not None:
+            self.h5pyf.flush()
+            self.h5pyf.close()
