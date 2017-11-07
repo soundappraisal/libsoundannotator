@@ -178,6 +178,6 @@ class FileOutputProcessor(processor.OutputProcessor):
             dset.attrs.create(str(dset.shape[shapeDim] + 1), str(chunk.dataGenerationTime))
     
     def flushAndClose(self):
-        if hasattr(self, 'h5pyf'):
+        if getattr(self, 'h5pyf', None) is not None:
             self.h5pyf.flush()
             self.h5pyf.close()
