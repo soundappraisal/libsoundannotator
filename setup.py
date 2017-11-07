@@ -52,17 +52,7 @@ from libsoundannotator.config.generateMetaData import generateMetaData
 generateMetaData()
 
 extra_link_args=[]
-required_packages= [
-            'numpy>=1.8.0',
-            'scipy>=0.13.0',
-            'pyaudio>=0.2.7',
-            'nose>=1.3.1',
-            'setproctitle>=1.0.1',
-            'psutil>=0.4.1',
-            'h5py>=2.2.1',
-            'lz4>=0.7.0',
-            'redis>=2.10.1',
-        ]
+required_packages= read('requirements.txt').split('\n')
 
 
 if sys.platform.startswith('win'):
