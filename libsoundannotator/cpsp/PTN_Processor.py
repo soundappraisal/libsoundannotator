@@ -33,9 +33,40 @@ import os
 import time
 
 class PTN_Processor(processor.Processor):
+    ''' 
+    PTN_Processor: Class to calculate the average energy in a time-frequency 
+    areas. Outputs pulse, tone, noise, and energy. Where pulse, tone 
+    and noise are based on the tract features. 
+    
+    If only a subset of pulse, tone, noise, and energy is needed use 
+    PartialPTN_Processor instead.
+    
+    Parameters: 
+        Required:
+            SampleRate                      sampling frequency in samples per second
+        Required with default:  
+            noofscales (100):               number of frequency channels on the incoming representation
+            TfThreshold (60):               threshold for the vertical tract features
+            TfSlope (0.2):                  slope at threshold of the sigmoidal threshold fucntion 
+            TsThreshold (60):               threshold for the horizontal tract features
+            TsSlope (0.2):                  slope at threshold of the sigmoidal threshold fucntion 
+            split ([]):                     List of monotonically increasing integers indicating channels 
+                                            at which TF-plane will be split in blocks, lower value is 
+                                            included in block. Highest allowed value is noofscales. Channels 
+                                            preceding first channel or following 
+                                            last channel will discarded.
+            blockwidth (1):                 blockwidth in seconds
+            logBandmeans (True):            if true take the log off the average bandmeans or not
+            normalize (False):              normalize pulse, tone and noise by energy in the block
+            ptnreferencevalue (None):       potential correction value on the energy
+            firstpublished (0):             processor restarts chunk numbering, the chunks 
+                                            produced often have a lower publishing frequency as the incoming chunks
+    
+    
+    '''
     requiredKeys=['E','f_tract','s_tract']
     intermediateKeys=['TfGate','TsGate','']
-    featurenames=['pulse','tone','noise','energy']
+    featurenames=['pulse','tone','noise','energy']  # Functions in __init__ should not use this parameter so it can be overruled in the derived class.
 
     def __init__(self,boardConn, name,*args, **kwargs):
         super(PTN_Processor, self).__init__(boardConn, name,*args, **kwargs)
@@ -73,7 +104,10 @@ class PTN_Processor(processor.Processor):
         
         self.resetfirstchunkinblock=True
         self.firstchunkinblock=None
+        
+    def prerun(self):
         self.setProcessorAlignments()
+        super(PTN_Processor, self).prerun() 
 
   
     def getcontinuity(self):
