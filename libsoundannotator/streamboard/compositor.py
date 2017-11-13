@@ -266,11 +266,8 @@ class compositeManager(object):
         for key in self.processor.processorAlignments:
             
             if self.processor.processorAlignments[key].fsampling is None:
-                raise ValueError('cA fsampling should be set on processor {0} for key {1}'.format(self.processor.name,key))
-            self.processor.logger.error('========== cA type of fsampling: {0} and value {1}'.format(type(self.processor.processorAlignments[key].fsampling),self.processor.processorAlignments[key].fsampling))
-            self.processor.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.processor.processorAlignments[key] ),self.processor.processorAlignments[key] ))
-            self.processor.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processor.processorAlignments),self.processor.processorAlignments ))
-    
+                raise ValueError('fsampling should be set on processor {0} for key {1}'.format(self.processor.name,key))
+          
             alignment=alignment_in.impose_processor_alignment(self.processor.processorAlignments[key])
             alignments_out[key]=alignment
         

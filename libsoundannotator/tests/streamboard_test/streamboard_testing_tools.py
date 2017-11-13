@@ -16,15 +16,37 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-'''
+
     
-    Author:     Ronald A.J. van Elburg, RonaldAJ@vanElburg.eu
-    Copyright:  SoundAppraisal B.V.
+Author:     Ronald A.J. van Elburg, RonaldAJ@vanElburg.eu
 
-    With this test we try to test composite management. Its first development preceded refactoring from smartChunks to the compositeManager/compositeChunks. To allow this test to run in both situations we don't access smartChunk functionality directly but only through interprocessor communication.  At present (August 2016, git-sha: 4df4c81e git-msg begin: STS-49: Design files for refactoring smartChunks.) there are no plans to change this interprocessor communication. 
 
-    The Scenario.play method makes use of the internal structure of a processor to make it publish a single chunk from the scenario. So I had to expose some of the internals of the processor to gets this to work. Important changes in these internals can therefore break these tests even when functionality and underlying conceptual model remain unchanged. A possible solution to this at present hypothetical problem is to keep the CompositeTester based on the old version while constructing new version of the tested processors. This still requires that the new processors would be compatible with the board.
+How to use streamboard_testing_tools:
+
+Streamboard testing tools is written to test the merging of chunks in 
+the streamboard context.
+
+To allow for this the Board class has been subclassed yielding the 
+TestBoard class. This class can store several ChunkEmitter processor 
+instances onBoard, and these processors are therefore not in a separate 
+process. The TestBoard is receiving subscriptions on behalf of these 
+processors and mimicks the activity  of normal processors by publishing 
+ScenarioLines. 
+
+At the same time, because it has been derived from 
+Board class, the TestBoard can launch regular processors and the special 
+CompositeTester processor. The CompositeTester processor can be 
+preloaded with a Scenario, and then when running it can test whether 
+the chunks it should receive according to the ScenarioLines in the 
+Scenario are actually arriving. If it finds deviation from the scenario 
+it will raise an Exception describing the kind of deviation.
+
+Note: The Scenario.play method makes use of the internal structure of a 
+processor to make it publish a single chunk from the scenario. To get 
+this to work some of the internals of the processor had to be exposed 
+to the Scenario class. Important changes in these internals can 
+therefore break these tests even when functionality and underlying 
+conceptual model remain unchanged. 
     
 '''
 
@@ -41,21 +63,19 @@ import time
 from libsoundannotator.streamboard                import processor
 from libsoundannotator.streamboard.continuity     import Continuity, chunkAlignment, processorAlignment
 from libsoundannotator.streamboard.compositor     import DataChunk
-from libsoundannotator.streamboard.board              import Board
-from libsoundannotator.streamboard.subscription       import SubscriptionOrder
+from libsoundannotator.streamboard.board          import Board
+from libsoundannotator.streamboard.subscription   import SubscriptionOrder
+from libsoundannotator.streamboard.messages       import BoardMessage
 
 
-'''
-Empty processor for testing this test
-'''
-
-
-
-'''
-    A Scenarioline instance contains the data for the construction of a single chunk. This includes the content of a Chunk from which it is therefore a derived class, furthermore it contains a processorinstance object and the name of the feature in the chunk.
-'''
 
 class ScenarioLine(DataChunk):
+    '''
+    A Scenarioline instance contains the data for the construction of a 
+    single chunk. This includes the content of a DataChunk from which 
+    it is therefore derived, furthermore it contains a   
+    processorinstance object and the name of the feature in the chunk. 
+    '''
      
     def __init__(self,
                 processorinstance,featurename, inout, data, startTime, fs, 
@@ -94,6 +114,13 @@ class ScenarioLine(DataChunk):
         
 
 class Scenario(object):
+    '''
+    A Scenario instance is both a collection of scenario lines and the 
+    class providing tools for executing the scenario lines. Using the 
+    append method a preconstructed Scenarioline instances are added to a 
+    Scenario. Alternatively ScennarioLine can be constucted directly in the Scennario by calling appendScenarioLine
+    '''
+    
     
     typeerrormessage='TypeError: It is only allowed to append ScenarioLines to a Scenario.' 
      
@@ -101,7 +128,12 @@ class Scenario(object):
         self.scenariolist=list()
         self.logger=logger
 
-    def append(self,event):   
+    def append(self,event):
+        '''
+        append: append a preconstructed Scenarioline instance to a 
+        Scenario.
+        '''
+           
         if type(event) == ScenarioLine:
             self.scenariolist.append
         else:
@@ -109,10 +141,18 @@ class Scenario(object):
 
 
     def appendScenarioLine(self,*args, **kwargs):
-        scenarioline=ScenarioLine(*args, **kwargs)
+        ''' 
+        appendScenarioLine: construct a ScenarioLine from the 
+        arguments given and append it. 
+        ''' 
+        
+        scenarioline=ScenarioLine(*args, **kwargs) 
         self.scenariolist.append(scenarioline)
     
     def publish(self,scenarioline,testboard, delta_t):
+        '''
+        
+        '''
         stored_subscriptions=scenarioline.processorinstance.subscriptions
         
         # Temporarily replace subscription list with one only including features from the current scenario
@@ -349,7 +389,9 @@ from libsoundannotator.streamboard.messages import ProcessorMessage
 
 from _multiprocessing import Connection
 '''
-    TestBoard is a tool used for reproducing the STS49 error while letting the test suite finish. The implementation is dubious at best so use at your own peril.
+    TestBoard is a tool used for reproducing the STS49 error while 
+    letting the test suite finish. The implementation is dubious at 
+    best so use at your own peril.
 '''
 class TestBoard(Board):
     
@@ -379,3 +421,29 @@ class TestBoard(Board):
                             raise Exception(exceptionstring)
                    
  
+    def createOnBoardTestProcessor(self, processorName, processorClass, *subscriptionorders, **kwargs):
+        if processorName in self.processors:
+            self.logger.error(
+            'Trying to start processor with duplicate name {0}. Processors must have unique names.'
+            .format(processorName))
+            return
+
+        requiredKeys = [o.receiverKey for o in subscriptionorders]
+            
+        kwargs['requiredKeys'] = requiredKeys
+
+        self.logger.debug("creating instance of {0}".format(processorName))
+        instance = processorClass(None, processorName, logdir=self.logdir, loglevel=self.loglevel, **kwargs)
+
+        self.processors[processorName] = (instance,instance)
+
+        # Let processor check whether provided subscriptions fit the required keys, processor
+        # will raise ValueErrors if not correct.
+        subscriptionReceiverKeys=[subscriptionorder.receiverKey for subscriptionorder in subscriptionorders]
+        instance.processBoardMessage(BoardMessage(BoardMessage.testrequiredkeys,subscriptionReceiverKeys))
+       
+        # After passing checks normally subscriptions would be created, but OnBoard TestProcessor don't subscribe
+        # to other processors, they only receive subscriptions.  
+        if len(requiredKeys) > 0:
+            self.logger.info('requiredKeys for TestProcessor will not be used for building connections')
+

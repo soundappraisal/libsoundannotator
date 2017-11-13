@@ -257,31 +257,6 @@ class Board(object):
                 self.subscribeToProcessor(subscriptionorder,processorName)
 
     
-    def createOnBoardTestProcessor(self, processorName, processorClass, *subscriptionorders, **kwargs):
-        if processorName in self.processors:
-            self.logger.error(
-            'Trying to start processor with duplicate name {0}. Processors must have unique names.'
-            .format(processorName))
-            return
-
-        requiredKeys = [o.receiverKey for o in subscriptionorders]
-            
-        kwargs['requiredKeys'] = requiredKeys
-
-        self.logger.debug("creating instance of {0}".format(processorName))
-        instance = processorClass(None, processorName, logdir=self.logdir, loglevel=self.loglevel, **kwargs)
-
-        self.processors[processorName] = (instance,instance)
-
-        # Let processor check whether provided subscriptions fit the required keys, processor
-        # will raise ValueErrors is not correct.
-        subscriptionReceiverKeys=[subscriptionorder.receiverKey for subscriptionorder in subscriptionorders]
-        instance.processBoardMessage(BoardMessage(BoardMessage.testrequiredkeys,subscriptionReceiverKeys))
-       
-        # After passing checks normally subscriptions are created
-        if len(requiredKeys) > 0:
-            self.logger.info('requiredKeys for TestProcessor will not be used for building connections')
-
 
 
     def stopProcessor(self, processorName):
