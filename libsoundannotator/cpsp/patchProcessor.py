@@ -23,7 +23,7 @@ import numpy as np
 from libsoundannotator.streamboard.processor  import Processor, Continuity
 from libsoundannotator.streamboard.continuity import Continuity, processorAlignment
 import patchExtractor as patchExtractor 
-import uuid
+import uuid, copy
 
 class Quantizer(object):
     def levels(self, data):
@@ -47,7 +47,7 @@ class textureQuantizer(Quantizer):
 
 class Patch(object):
     
-    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=0, **kwargs):
+    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=0, serial_number=0, **kwargs):
         self.identifier=uuid.uuid1()
         self.typelabel=None
         self.level=level
@@ -58,6 +58,11 @@ class Patch(object):
         self.size=size
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
+        self.serial_number=serial_number
+    
+    def copy(self):
+        return copy.copy(self)
+    
     
     def set_inFrameCount(self,inFrameCount):
         self.inFrameCount=inFrameCount
@@ -75,6 +80,35 @@ class Patch(object):
         assert (distribution.shape == self.s_shape)
         self.inScaleDistributions[ts_rep_name] = distribution
             
+    def merge_descriptors(self, other):
+        
+        # Code written in such a way that swapping arguments should not 
+        # affect resulting descriptors.
+        other_=other.copy()
+        self_=self.copy()
+        
+        #  Use the most recent identifier. This way the same identifier 
+        #  will not occur twice in the processor output
+        if self_.serial_number > other_.serial_number: 
+            self.identifier=self_.identifier
+        else:
+            self.identifier=other_.identifier
+            
+        assert(self_.typelabel==other_.typelabel)
+        assert(other_.level==self_.level)
+                
+        self.s_range=np.array(  [   np.min([other_.s_range[0],self_.s_range[0]]),
+                                    np.max([other_.s_range[1],self_.s_range[1]])]    )
+        self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
+        self.t_range=np.array(  [   np.min([other_.t_range[0],self_.t_range[0]]),
+                                    np.max([other_.t_range[1],self_.t_range[1]])]    )
+        self.t_shape=(self.t_range[1]-self.t_range[0]+1,)
+        self.size=other_.size+self_.size
+        
+        self.serial_number=np.min([self_.serial_number,other_.serial_number])
+        
+        return self
+        
     def merge(self, other ):
         scalemerge=False
         framemerge=False
@@ -136,8 +170,24 @@ class Patch(object):
        
          
     def __str__(self):
-        returnstring='Patch at level={0}, \n size={1} \n inScaleCount={2} \n inFrameCount={3} '.format(
+        
+        
+        returnstring='Patch at level={0}, \n size={1} \n inScaleCount={2} \n inFrameCount={3} \n '.format(
             self.level,self.size,self.inScaleCount ,self.inFrameCount)   
+        
+        returnstring+=("Patch descriptors:\n  uuid={0},"+
+        " \n typelabel={1} \n level={2} \n self.s_shape={3} "+
+        " \n typelabel={4} \n level={5} \n self.s_shape={6} "+
+        "\n self.s_shape={6} \n").format(
+        self.identifier,
+        self.typelabel,
+        self.level,
+        self.s_shape,
+        self.s_range,
+        self.t_shape,
+        self.t_range,
+        self.size)
+        
         
         for ts_rep in self.inScaleDistributions.keys():
             returnstring+='\n tsrep: {0}, value: {1}'.format(ts_rep,self.inScaleDistributions[ts_rep] )
@@ -184,6 +234,8 @@ class patchProcessorCore(object):
         self.cumulativePatchCount=0
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
+        self.newpatchlist=list()
+        self.oldpatchlist=list()
         
     def prerun(self):
         self.logger.info('patchProcessorCore prerun')
@@ -216,10 +268,11 @@ class patchProcessorCore(object):
             self.N=self.extractor.cpp_calcPatches(self.levels,self.patchMatrix)
             descriptors=np.zeros([6,self.N],'int32') 
             self.extractor.cpp_getDescriptors(descriptors)
+            self.oldpatchlist=self.newpatchlist
             self.newpatchlist=list()
             for patchNo in np.arange(self.N):
                 # Set simplest patch descriptors
-                newPatch=Patch(*descriptors[:,patchNo],t_offset=initialSampleTime)
+                newPatch=Patch(*descriptors[:,patchNo],t_offset=initialSampleTime,serial_number=patchNo+self.cumulativePatchCount)
                 
                 # Get and set in row count of timescale pixels
                 inScaleCount=np.zeros(newPatch.s_shape,'int32')
@@ -267,7 +320,42 @@ class patchProcessorCore(object):
             # Replace current patch numbers with those indicated in the joinMatrix
             for patchNo in  np.arange(validpatches):
                 if not(self.joinMatrix[patchNo,1] ==   self.joinMatrix[patchNo,0]):
+                    # Update the patchMatrix to reflect correct joining of patches
                     self.patchMatrix[self.joinMatrix[patchNo,0]==self.patchMatrix]=self.joinMatrix[patchNo,1] 
+                    
+            # Update the new patches to reflect correct joining of patches
+            updatedPatchList=list()
+            oldpatches=dict()
+            newpatches=dict()
+            
+            continuedpatches=set()
+            
+            for patch in self.oldpatchlist:
+                oldpatches[patch.serial_number]=patch
+            
+            for patch in self.newpatchlist:
+                newpatches[patch.serial_number]=patch
+                
+            for patchNo in np.arange(validpatches):
+                patch_key_for_new_chunk=self.joinMatrix[patchNo,0]
+                
+                if patch_key_for_new_chunk in newpatches.keys():
+                    patch_for_new_chunk=newpatches[patch_key_for_new_chunk]
+                    if self.joinMatrix[patchNo,1] ==  patch_key_for_new_chunk:
+                        updatedPatchList.append(patch_for_new_chunk)
+                    else:
+                        patch_key_for_old_chunk=self.joinMatrix[patchNo,1]
+                        if patch_key_for_old_chunk in oldpatches.keys():
+                            continued_patch=oldpatches[patch_key_for_old_chunk]
+                            #self.logger.info('continued_patch.serial_number: {0}'.format(continued_patch.serial_number))    
+                            continuedpatches=continuedpatches.union({continued_patch.serial_number, })
+                            oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge_descriptors(continued_patch)
+                            
+            #self.logger.info('continuedpatches: {0}'.format(continuedpatches))               
+            for serial_number in continuedpatches:
+                updatedPatchList.append(oldpatches[serial_number])
+            
+            self.newpatchlist=updatedPatchList
             
             # Store end of patchMatrix for the next merge
             self.tex_before[:]= np.array(self.levels[:,-1])     

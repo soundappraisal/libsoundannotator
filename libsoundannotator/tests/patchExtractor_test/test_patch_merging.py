@@ -19,39 +19,14 @@ limitations under the License.
 '''
 from nose import with_setup
 
-from libsoundannotator.cpsp import patchExtractor
+from libsoundannotator.cpsp import patchExtractor, patchProcessor
 import numpy as np
+import multiprocessing
 
-horizontal_stripes=np.zeros([10,20],'int32')
-horizontal_stripe_labels=np.zeros([10,20],'int32')
-vertical_stripes=np.zeros([10,20],'int32')
-vertical_stripe_labels=np.zeros([10,20],'int32')
-broken_vertical_stripes=np.zeros([10,20],'int32')
-broken_vertical_stripe_labels=np.zeros([10,20],'int32')
 
-def setup_each(): #Only inplace changes are effective here!
-    '''
-        horizontal-stripes fixture and expected horizontal_stripe_labels
-    '''        
-    horizontal_stripe_labels[:,:]=np.zeros([10,20],'int32')
-    for i in np.arange(10):
-        horizontal_stripe_labels[i,:]=i
-    horizontal_stripes[:,:]=horizontal_stripe_labels+1
-    '''
-        vertical_stripes fixture and expected vertical_stripe_labels
-    '''
-    vertical_stripe_labels[:,:]=np.zeros([10,20],'int32')    
-    for i in np.arange(20):  
-        vertical_stripe_labels[:,i]=i
-    vertical_stripes[:,:]=vertical_stripe_labels-12
-    '''
-        broken_vertical_stripes fixture and expected vertical_stripe_labels
-    '''
-    broken_vertical_stripe_labels[:,:]=np.zeros([10,20],'int32')    
-    for i in np.arange(20):  
-        broken_vertical_stripe_labels[:5,i]=i
-        broken_vertical_stripe_labels[5:,i]=i+20
-    broken_vertical_stripes[:,:]=broken_vertical_stripe_labels+11
+from libsoundannotator.streamboard.continuity     import Continuity
+from libsoundannotator.streamboard.compositor     import DataChunk, compositeChunk
+
 
 '''
 Auxilary code for mapping connected components to a unique representation
@@ -156,3 +131,39 @@ def test_join_double_bulk_connection():
     np.testing.assert_equal(joinMatrixExpected,joinMatrix)
 
 
+def test_process_continuous_chunks():
+    
+    logger = multiprocessing.log_to_stderr()
+    quantizer=patchProcessor.textureQuantizer()
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=100, logger=logger)
+    p.prerun()
+    
+    requiredKeys=frozenset(['TSRep',])
+    
+    fs=44100
+    processorname='testing'
+    sources={'mock_tf'}
+    
+    data1=np.zeros((100,8820),dtype=np.float)
+    data2=np.zeros((100,8820),dtype=np.float)
+    
+    startTime1=12.
+    startTime2=12.+8820./fs
+    
+    not_a_composite_chunk1=compositeChunk(12, requiredKeys)
+    not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources)
+    not_a_composite_chunk1.continuity=Continuity.discontinuous
+    not_a_composite_chunk1.chunkcontinuity=Continuity.discontinuous
+    not_a_composite_chunk1.received['TSRep'].initialSampleTime=0.1
+    
+    not_a_composite_chunk2=compositeChunk(13, requiredKeys)
+    not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources)
+    not_a_composite_chunk2.received['TSRep'].initialSampleTime=0.1
+    
+    r1=p.processData(not_a_composite_chunk1.received['TSRep'])
+    r2=p.processData(not_a_composite_chunk2.received['TSRep'])
+
+    
+    #print('{0}, {1}'.format(r1,r2))
+    print('patches {0}, {1}'.format(r1['patches'][0],r2['patches'][0]))
+    assert(False)
