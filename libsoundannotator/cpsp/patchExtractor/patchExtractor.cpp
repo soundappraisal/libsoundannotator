@@ -451,12 +451,17 @@ int patchExtractor::calcJoinMatrix(int noRows, int * texturesBefore, int * textu
     for(i=1;i<2*noRows;i++){
         if(patchNoList[i-1]!=patchNoList[i]){
             bInsert=true;
+            
+            // Some patches can for example have holes at the boundary,
+            // after a change we should therefore check whether we didn't 
+            // see the patch before.
             for(j=0;j<validPatchCount && bInsert;j++){
                 if(patchNoList[i]==patchNoList[j]){ bInsert=false;}
             }
             
-            if(bInsert==true){
-                
+            // Unseen patches are moved to the end of the list of patches
+            // seen, this is done in place.
+            if(bInsert==true){                
                 patchNoList[validPatchCount]=patchNoList[i];
                 validPatchCount++;
             }
@@ -474,9 +479,10 @@ int patchExtractor::calcJoinMatrix(int noRows, int * texturesBefore, int * textu
             bInsert=true;
             
             // Check if patches were linked already, no need to provide links twice ...
-            for(j=0;j<=lastvalidLink && bInsert;j++){
-                if(links[lastvalidLink][0]==patchNumbersBefore[i] && links[lastvalidLink][1]==patchNumbersAfter[i]){ bInsert=false;}
-            }
+            // for(j=0;j<=lastvalidLink && bInsert;j++){
+            //     if(links[j][0]==patchNumbersBefore[i] && links[j][1]==patchNumbersAfter[i]){ bInsert=false;}
+            // }
+            // The code above commented out because it in all likelihood gives very small performance gains
             
             // ... if not add them to the list of links
             if(bInsert==true){

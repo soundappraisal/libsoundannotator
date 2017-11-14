@@ -235,23 +235,41 @@ class patchProcessorCore(object):
 
             
     def joinpatches(self):
+            
+            ''' 
+            joinpatches: join incomplete patches over  the 
+            chunkboundary if they belong together. They belong together 
+            if their frequencies are aligned and they have the same 
+            texture label.
+            '''
+            
+            # Correct the patch count from the raw value coming from  
+            # the C++ code, and keep track of how many patches have been
+            # used in total
             self.patchMatrix[:,:]+=self.cumulativePatchCount
             self.cumulativePatchCount+=self.N
            
+            # Copy patch information from the C++ code provided patch 
+            # information.
             self.tex_after[:]= np.array(self.levels[:,0])
             self.patch_after[:]=np.array(self.patchMatrix[:,0])
           
+            # Calculate the number of valid patches and the matrix 
+            # describing which patches need to be joined. This joinMatrix 
+            # is passed as an argument but its elements are changed in place! 
             validpatches=self.extractor.cpp_calcJoinMatrix(self.tex_before, 
                 self.tex_after,
                 self.patch_before, 
                 self.patch_after, 
-                self.joinMatrix 
+                self.joinMatrix      # this matrix holds part of the result.
             )
             
+            # Replace current patch numbers with those indicated in the joinMatrix
             for patchNo in  np.arange(validpatches):
                 if not(self.joinMatrix[patchNo,1] ==   self.joinMatrix[patchNo,0]):
                     self.patchMatrix[self.joinMatrix[patchNo,0]==self.patchMatrix]=self.joinMatrix[patchNo,1] 
             
+            # Store end of patchMatrix for the next merge
             self.tex_before[:]= np.array(self.levels[:,-1])     
             self.patch_before[:]=np.array(self.patchMatrix[:,-1])
 
