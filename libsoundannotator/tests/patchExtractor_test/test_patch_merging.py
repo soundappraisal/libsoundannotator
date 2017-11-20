@@ -129,41 +129,189 @@ def test_join_double_bulk_connection():
     validpatches=p.cpp_calcJoinMatrix(tex_before, tex_after, patch_before, patch_after, joinMatrix )
     print('joinMatrix:{0}, validpatches:{1}'.format(joinMatrix[0:validpatches,:],validpatches))
     np.testing.assert_equal(joinMatrixExpected,joinMatrix)
-
+    #assert(False)
 
 def test_process_continuous_chunks():
     
+    fs=100
+    
     logger = multiprocessing.log_to_stderr()
     quantizer=patchProcessor.textureQuantizer()
-    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=100, logger=logger)
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=10, logger=logger,SampleRate=fs)
     p.prerun()
     
     requiredKeys=frozenset(['TSRep',])
     
-    fs=44100
     processorname='testing'
     sources={'mock_tf'}
     
-    data1=np.zeros((100,8820),dtype=np.float)
-    data2=np.zeros((100,8820),dtype=np.float)
+    data1=np.ones((10,20),dtype=np.float)
+    data1[5:,:10]=30*np.ones((5,10),dtype=np.float)
+    data1[5:,10:]=1*np.ones((5,10),dtype=np.float)
+    
+    data1[5:,18:]=70*np.ones((5,2),dtype=np.float)
+    data2=70*np.ones((10,20),dtype=np.float)
+    data2[5:,18:]=30*np.ones((5,2),dtype=np.float)
+    data2[:4,:]=1*np.ones((4,20),dtype=np.float)
     
     startTime1=12.
-    startTime2=12.+8820./fs
+    startTime2=12.+20./fs
     
     not_a_composite_chunk1=compositeChunk(12, requiredKeys)
     not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources)
-    not_a_composite_chunk1.continuity=Continuity.discontinuous
-    not_a_composite_chunk1.chunkcontinuity=Continuity.discontinuous
-    not_a_composite_chunk1.received['TSRep'].initialSampleTime=0.1
+    not_a_composite_chunk1.received['TSRep'].continuity     = Continuity.discontinuous
+    not_a_composite_chunk1.received['TSRep'].chunkcontinuity= Continuity.discontinuous
+    not_a_composite_chunk1.received['TSRep'].initialSampleTime=startTime1
     
     not_a_composite_chunk2=compositeChunk(13, requiredKeys)
     not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources)
-    not_a_composite_chunk2.received['TSRep'].initialSampleTime=0.1
+    not_a_composite_chunk2.received['TSRep'].initialSampleTime=startTime2
     
     r1=p.processData(not_a_composite_chunk1.received['TSRep'])
     r2=p.processData(not_a_composite_chunk2.received['TSRep'])
-
+   
+    np.testing.assert_equal(r1['matrix'],np.array(
+                                                [   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2,],
+                                                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2,],
+                                                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2,],
+                                                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2,],
+                                                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2,],]))
     
+    
+    np.testing.assert_equal(r1['levels'],np.array( 
+                                                [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
+                                                , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
+                                                , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
+                                                , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
+                                                , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]]))
+                                                    
+    np.testing.assert_equal(r2['matrix'],np.array(
+                                                    [ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                    , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                    , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                    , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5]
+                                                    , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5]]))
+                                                
+    np.testing.assert_equal(r2['levels'],np.array( 
+                                                [ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]
+                                                , [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1]]))
+    
+    
+    
+    expectedPatchesChunk1=dict()
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=0 
+    dummy['s_shape']=(10,)  
+    dummy['s_range']=[0, 9] 
+    dummy['t_shape']=(20,) 
+    dummy['t_range']=[ 12. ,   12.19] 
+    dummy['size']=140 
+    dummy['serial_number']=0 
+    expectedPatchesChunk1[dummy['serial_number']]=dummy
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=1 
+    dummy['s_shape']=(5,)  
+    dummy['s_range']=[5, 9] 
+    dummy['t_shape']=(10,) 
+    dummy['t_range']=[ 12. ,   12.09] 
+    dummy['size']=50 
+    dummy['serial_number']=1
+    expectedPatchesChunk1[dummy['serial_number']]=dummy
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=2 
+    dummy['s_shape']=(5,)  
+    dummy['s_range']=[5, 9] 
+    dummy['t_shape']=(2,) 
+    dummy['t_range']=[ 12.18,  12.19] 
+    dummy['size']=10 
+    dummy['serial_number']=2 
+    expectedPatchesChunk1[dummy['serial_number']]=dummy
+
+
+
+
+    expectedPatchesChunk2=dict()
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=0 
+    dummy['s_shape']=(10,)  
+    dummy['s_range']=[0,9] 
+    dummy['t_shape']=(40,) 
+    dummy['t_range']=[ 12.0,   12.39] 
+    dummy['size']=220 
+    dummy['serial_number']=0 
+    expectedPatchesChunk2[dummy['serial_number']]=dummy
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=2 
+    dummy['s_shape']=(6,)  
+    dummy['s_range']=[4 ,9] 
+    dummy['t_shape']=(22,) 
+    dummy['t_range']=[ 12.18,  12.39] 
+    dummy['size']=120 
+    dummy['serial_number']=2 
+    expectedPatchesChunk2[dummy['serial_number']]=dummy
+    dummy=dict()
+    dummy['typelabel']=None 
+    dummy['level']=1 
+    dummy['s_shape']=(5,)  
+    dummy['s_range']=[5, 9] 
+    dummy['t_shape']=(2,) 
+    dummy['t_range']=[ 12.38 , 12.39] 
+    dummy['size']=10 
+    dummy['serial_number']=5 
+    expectedPatchesChunk2[dummy['serial_number']]=dummy
+
     #print('{0}, {1}'.format(r1,r2))
-    print('patches {0}, {1}'.format(r1['patches'][0],r2['patches'][0]))
-    assert(False)
+    for patch in r1['patches']:
+        print '==1======= \n {} \n ====='.format(patch)
+        dummy=expectedPatchesChunk1[patch.serial_number]
+        for key, value in dummy.items():
+            print('key: {0}, value: {1}'.format(key,value))
+            if type(value) == list:
+                np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
+            else:
+                assert(value == patch.__dict__[key])
+    
+    for patch in r2['patches']:
+        print '==2======= \n {0} \n ======='.format(patch)
+        dummy=expectedPatchesChunk2[patch.serial_number]
+        for key, value in dummy.items():
+            print('key: {0}, value: {1}'.format(key,value))
+            assert(key in patch.__dict__.keys())
+            print('value: {0}'.format(patch.__dict__[key]))
+            if type(value) == list:
+                np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
+            else:
+                assert(value == patch.__dict__[key])
+    
+      
+   
+        
+    #assert(False)
