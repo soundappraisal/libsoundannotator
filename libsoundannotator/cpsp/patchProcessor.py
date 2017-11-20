@@ -47,14 +47,20 @@ class textureQuantizer(Quantizer):
 
 class Patch(object):
     
-    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=0, serial_number=0, **kwargs):
+    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=None, serial_number=0, samplerate=0, **kwargs):
         self.identifier=uuid.uuid1()
         self.typelabel=None
         self.level=level
         self.s_shape=(s_high-s_low+1,)
         self.s_range=np.array([s_low,s_high])
         self.t_shape=(t_high-t_low+1,)
-        self.t_range=np.array([t_low+t_offset,t_high+t_offset])
+        if not t_offset == None:
+            assert(samplerate > 0)
+            self.samplerate=float(samplerate)
+            self.t_range=np.array([t_low/self.samplerate+t_offset,t_high/self.samplerate+t_offset])
+        else:
+            self.t_range=np.array([t_low,t_high])
+            
         self.size=size
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
@@ -102,7 +108,7 @@ class Patch(object):
         self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
         self.t_range=np.array(  [   np.min([other_.t_range[0],self_.t_range[0]]),
                                     np.max([other_.t_range[1],self_.t_range[1]])]    )
-        self.t_shape=(self.t_range[1]-self.t_range[0]+1,)
+        self.t_shape=(other_.t_shape[0]+self_.t_shape[0],)
         self.size=other_.size+self_.size
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
@@ -172,13 +178,16 @@ class Patch(object):
     def __str__(self):
         
         
-        returnstring='Patch at level={0}, \n size={1} \n inScaleCount={2} \n inFrameCount={3} \n '.format(
-            self.level,self.size,self.inScaleCount ,self.inFrameCount)   
+        returnstring='Patch at level={0}, \n size={1} \n  '.format(
+            self.level,self.size)   
+        
+        #returnstring=' inScaleCount={2} \n inFrameCount={3} \n '.format(
+        #    self.inScaleCount ,self.inFrameCount)   
         
         returnstring+=("Patch descriptors:\n  uuid={0},"+
-        " \n typelabel={1} \n level={2} \n self.s_shape={3} "+
-        " \n typelabel={4} \n level={5} \n self.s_shape={6} "+
-        "\n self.s_shape={6} \n").format(
+        " \n typelabel={1} \n level={2} \n s_shape={3} "+
+        " \n s_range={4} \n t_shape={5} \n t_range={6} "+
+        "\n size={7} \n serial_number={8} \n").format(
         self.identifier,
         self.typelabel,
         self.level,
@@ -186,14 +195,15 @@ class Patch(object):
         self.s_range,
         self.t_shape,
         self.t_range,
-        self.size)
+        self.size,
+        self.serial_number)
         
-        
+        '''
         for ts_rep in self.inScaleDistributions.keys():
             returnstring+='\n tsrep: {0}, value: {1}'.format(ts_rep,self.inScaleDistributions[ts_rep] )
             
         for ts_rep in self.inFrameDistributions.keys():
-            returnstring+='\n tsrep: {0}, value: {1}'.format(ts_rep,self.inFrameDistributions[ts_rep] )
+            returnstring+='\n tsrep: {0}, value: {1}'.format(ts_rep,self.inFrameDistributions[ts_rep] )'''
         return  returnstring
    
 def joinDistributions( dist1, dist2, range1, range2, weights1, weights2 ):
@@ -225,7 +235,8 @@ class patchProcessorCore(object):
         self.quantizer=kwargs['quantizer']
         self.noofscales=kwargs['noofscales']
         self.logger=kwargs['logger']
-        self.logger.info('patchProcessorCore initialized')
+        self.samplerate=kwargs['SampleRate']
+        
         self.tex_after=np.zeros([self.noofscales],'int32')
         self.patch_after=np.zeros([self.noofscales],'int32') 
         self.tex_before=np.zeros([self.noofscales],'int32')
@@ -237,6 +248,8 @@ class patchProcessorCore(object):
         self.newpatchlist=list()
         self.oldpatchlist=list()
         
+        self.logger.info('patchProcessorCore initialized')
+        
     def prerun(self):
         self.logger.info('patchProcessorCore prerun')
         self.extractor=patchExtractor.patchExtractor()
@@ -247,7 +260,7 @@ class patchProcessorCore(object):
         # Assuming the first data source is E
         if chunk is not None:
             result=dict()
-            self.logger.info('patchProcessorCore processData with shape {0}'.format(chunk.data.shape))
+            #self.logger.info('patchProcessorCore processData with shape {0}'.format(chunk.data.shape))
             self.newpatches(chunk.data, chunk.initialSampleTime)
             if(chunk.continuity>=Continuity.withprevious):
                 self.joinpatches()
@@ -255,6 +268,14 @@ class patchProcessorCore(object):
             result['matrix']=self.patchMatrix
             result['patches']=self.newpatchlist
             result['levels']=self.levels
+            
+            # Store information on current patches to make them available
+            # in case of a merge with next chunk
+            self.tex_before[:]= np.array(self.levels[:,-1]) 
+            self.patch_before[:]=np.array(self.patchMatrix[:,-1]) 
+            self.oldpatchlist=self.newpatchlist            
+            self.cumulativePatchCount+=self.N
+
         
         return result
 
@@ -266,13 +287,20 @@ class patchProcessorCore(object):
             self.levels=self.quantizer.levels(data)
             self.patchMatrix=np.zeros(np.shape(self.levels),'int32')
             self.N=self.extractor.cpp_calcPatches(self.levels,self.patchMatrix)
+            
+            # Correct the patch count from the raw value coming from  
+            # the C++ code. In this patch count merging is ignored for simplicity.
+            self.patchMatrix=self.patchMatrix+self.cumulativePatchCount
+            
             descriptors=np.zeros([6,self.N],'int32') 
             self.extractor.cpp_getDescriptors(descriptors)
-            self.oldpatchlist=self.newpatchlist
             self.newpatchlist=list()
             for patchNo in np.arange(self.N):
                 # Set simplest patch descriptors
-                newPatch=Patch(*descriptors[:,patchNo],t_offset=initialSampleTime,serial_number=patchNo+self.cumulativePatchCount)
+                newPatch=Patch(*descriptors[:,patchNo],
+                                t_offset=initialSampleTime,
+                                serial_number=patchNo+self.cumulativePatchCount,
+                                samplerate=self.samplerate)
                 
                 # Get and set in row count of timescale pixels
                 inScaleCount=np.zeros(newPatch.s_shape,'int32')
@@ -283,30 +311,30 @@ class patchProcessorCore(object):
                 inFrameCount=np.zeros(newPatch.t_shape,'int32')
                 self.extractor.cpp_getInColCount(int(patchNo),inFrameCount)
                 newPatch.set_inFrameCount(inFrameCount)
-                
                 self.newpatchlist.append(newPatch)
-
             
     def joinpatches(self):
             
             ''' 
-            joinpatches: join incomplete patches over  the 
+            joinpatches: join incomplete patches over the 
             chunkboundary if they belong together. They belong together 
             if their frequencies are aligned and they have the same 
-            texture label.
+            texture label. 
+            
+            The resulting patches have a uuid generated with the new patch 
+            and a serial number corresponding the earliest patch to which 
+            it is continuously connected.
             '''
             
-            # Correct the patch count from the raw value coming from  
-            # the C++ code, and keep track of how many patches have been
-            # used in total
-            self.patchMatrix[:,:]+=self.cumulativePatchCount
-            self.cumulativePatchCount+=self.N
            
             # Copy patch information from the C++ code provided patch 
             # information.
             self.tex_after[:]= np.array(self.levels[:,0])
             self.patch_after[:]=np.array(self.patchMatrix[:,0])
-          
+            
+            # Allocate memory for the result provided by C++ code
+            self.joinMatrix=np.zeros([2*self.noofscales,2],'int32')
+            
             # Calculate the number of valid patches and the matrix 
             # describing which patches need to be joined. This joinMatrix 
             # is passed as an argument but its elements are changed in place! 
@@ -329,37 +357,44 @@ class patchProcessorCore(object):
             newpatches=dict()
             
             continuedpatches=set()
+            patchestokeep=set()
             
             for patch in self.oldpatchlist:
                 oldpatches[patch.serial_number]=patch
             
             for patch in self.newpatchlist:
                 newpatches[patch.serial_number]=patch
-                
+                patchestokeep=patchestokeep.union({patch.serial_number,})
+            
             for patchNo in np.arange(validpatches):
                 patch_key_for_new_chunk=self.joinMatrix[patchNo,0]
                 
                 if patch_key_for_new_chunk in newpatches.keys():
                     patch_for_new_chunk=newpatches[patch_key_for_new_chunk]
-                    if self.joinMatrix[patchNo,1] ==  patch_key_for_new_chunk:
-                        updatedPatchList.append(patch_for_new_chunk)
-                    else:
+                    if not self.joinMatrix[patchNo,1] ==  patch_key_for_new_chunk: 
+                        # The patch is involved in merge over the chunk boundary, 
+                        # remove from the list of unaffected patches. 
+                        patchestokeep=patchestokeep.difference({patch_key_for_new_chunk,})  
+                        
+                        # Get the old patch involved in the merge and merge
                         patch_key_for_old_chunk=self.joinMatrix[patchNo,1]
                         if patch_key_for_old_chunk in oldpatches.keys():
-                            continued_patch=oldpatches[patch_key_for_old_chunk]
-                            #self.logger.info('continued_patch.serial_number: {0}'.format(continued_patch.serial_number))    
+                            continued_patch=oldpatches[patch_key_for_old_chunk]   
                             continuedpatches=continuedpatches.union({continued_patch.serial_number, })
+                            # Merge in place from the perspective of the dictionary.
+                            # The same old patch can appear more than once in the joinMatrix, we can therefore
+                            # not append the resulting patch to the updatedPatchList here. 
                             oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge_descriptors(continued_patch)
                             
-            #self.logger.info('continuedpatches: {0}'.format(continuedpatches))               
             for serial_number in continuedpatches:
                 updatedPatchList.append(oldpatches[serial_number])
-            
+     
+            for serial_number in patchestokeep:
+                updatedPatchList.append(newpatches[serial_number])
+                
             self.newpatchlist=updatedPatchList
             
-            # Store end of patchMatrix for the next merge
-            self.tex_before[:]= np.array(self.levels[:,-1])     
-            self.patch_before[:]=np.array(self.patchMatrix[:,-1])
+           
 
 class patchProcessor(Processor):
     requiredKeys=['TSRep']
@@ -377,6 +412,7 @@ class patchProcessor(Processor):
     def prerun(self):
         super(patchProcessor, self).prerun()
         self.kwargs['logger']=self.logger
+        self.kwargs['SampleRate']=self.samplerate
         self.patchProcessorCore=patchProcessorCore(*self.args,**self.kwargs)
         self.patchProcessorCore.prerun()
 
