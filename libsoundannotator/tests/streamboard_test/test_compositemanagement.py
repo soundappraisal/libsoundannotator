@@ -187,7 +187,9 @@ def test_reproduction_sts49():
                             
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C,processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -269,7 +271,8 @@ def test_calibrationflow():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C ,
-                            processoralignment={'C':processorAlignment(fsampling=fs)})
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'])
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -364,7 +367,8 @@ def test_fileprocessingflow():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -461,7 +465,8 @@ def test_online_processingflow():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)})
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'])
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
     
@@ -555,7 +560,8 @@ def test_online_processingflow_withgap():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -658,7 +664,8 @@ def test_online_processingflow_illegalovertaking():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -763,7 +770,8 @@ def test_online_processingflow_lostintransmission0A():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            processoralignment={'C':processorAlignment(fsampling=fs)} ,
+                            requiredKeys=['A','B'])
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -867,7 +875,8 @@ def test_online_processingflow_lostintransmission2B():
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)} )
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
