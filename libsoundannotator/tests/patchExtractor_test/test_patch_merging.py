@@ -294,11 +294,18 @@ def test_process_continuous_chunks():
     not_a_composite_chunk1.received['TSRep'].chunkcontinuity= Continuity.discontinuous
     not_a_composite_chunk1.received['TSRep'].initialSampleTime=startTime1
     
-    not_a_composite_chunk2=compositeChunk(13, requiredKeys)
-    not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources,number=13)
+    # Chunks can contain empty matrices, should basically be ignored if continuity is withprevious or compatible
+    not_a_composite_chunk3=compositeChunk(13, requiredKeys)
+    not_a_composite_chunk3.received['TSRep']= DataChunk(np.zeros((10,0)), startTime2, fs, processorname, sources,number=13)
+    not_a_composite_chunk3.received['TSRep'].initialSampleTime=startTime2
+    
+    
+    not_a_composite_chunk2=compositeChunk(14, requiredKeys)
+    not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources,number=14)
     not_a_composite_chunk2.received['TSRep'].initialSampleTime=startTime2
     
     r1=p.processData(not_a_composite_chunk1.received['TSRep'])
+    r3=p.processData(not_a_composite_chunk3.received['TSRep'])
     r2=p.processData(not_a_composite_chunk2.received['TSRep'])
    
     np.testing.assert_equal(r1['matrix'],np.array(

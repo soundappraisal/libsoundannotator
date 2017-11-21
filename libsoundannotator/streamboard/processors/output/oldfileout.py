@@ -69,7 +69,7 @@ class FileOutputProcessor(processor.OutputProcessor):
         self.logger.info('Location: {}'.format(location))
         #if discontinuous, force new file
         if compositeChunk.continuity == Continuity.discontinuous or compositeChunk.continuity == Continuity.newfile:
-            self.logger.warning("Encountered discontinuity. Saving output into new file")
+            self.logger.warning("Encountered discontinuity. Saving output into new file. Chunk no: {0}, continuity {1}".format(compositeChunk.number, compositeChunk.continuity))
             #force increment in new file
             self.h5pyf = util.resolveDataFile(outdir, location, logger=self.logger, maxFileSize=self.config['maxFileSize'], forceNewFile=True)
         elif compositeChunk.continuity == Continuity.last:

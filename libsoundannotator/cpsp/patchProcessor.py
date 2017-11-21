@@ -284,6 +284,10 @@ class patchProcessorCore(object):
             self.logger.info('Processed chunk {}'.format(chunk.number))
         else:
             if(chunk.continuity>=Continuity.withprevious):
+                result=dict()
+                result['matrix']=np.zeros(chunk.data.shape)
+                result['patches']=list()
+                result['levels']=np.zeros(chunk.data.shape)
                 self.logger.info('set merge prepaered flag to : {}'.format(chunk.number+1)) 
                 self.mergeprepared = chunk.number+1
             else:
