@@ -300,18 +300,18 @@ class patchProcessorCore(object):
             self.patchMatrix=np.zeros(np.shape(self.levels),'int32')
             self.N=self.extractor.cpp_calcPatches(self.levels,self.patchMatrix)
             
-            #self.logger.info('========= A =============== noofPatches: {}'.format(self.N))             
-            
             # Correct the patch count from the raw value coming from  
             # the C++ code. In this patch count merging is ignored for simplicity.
-            keepMemoryAllocatedForCPPCode=self.patchMatrix
+            #   ... but first prevent garbage collection of memory in use by c++ code,
+            #   all patch related info needs to be copied to python datastructures in 
+            #   the scope containing the call to cpp_calcPatches before it can be safely
+            #   collected.
+            keepMemoryAllocatedForCPPCode=self.patchMatrix     
             self.patchMatrix=self.patchMatrix+self.cumulativePatchCount
             
             self.descriptors=np.zeros([6,self.N],'int32') 
-            #self.logger.info('========= A .1=============== {}'.format(self.patchMatrix[:,0]))
             self.extractor.cpp_getDescriptors(self.descriptors)
             
-            #self.logger.info('========= B ===============')   
             self.newpatchlist=list()
             for patchNo in np.arange(self.N):
                 # Set simplest patch descriptors
