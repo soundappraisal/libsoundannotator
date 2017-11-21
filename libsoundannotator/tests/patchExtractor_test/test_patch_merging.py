@@ -131,6 +131,137 @@ def test_join_double_bulk_connection():
     np.testing.assert_equal(joinMatrixExpected,joinMatrix)
     #assert(False)
 
+def test_memory_allocation1():
+    '''
+        Mainly testing whether memory is handled correctly, when calling 
+        the c++ code. Python code is partly responsible for allocating memory
+        when the cpp code is in use this memory cannot be garbage collected
+        without consequence. Reallocating in c++ would lead to unneeded 
+        memory usage.
+        
+        No stress here on correctness of result, therefore no check on 
+        generated output.
+    '''
+    
+    
+    fs=100
+    noofscales=49
+    startTime1=12.
+    logger = multiprocessing.log_to_stderr()
+    quantizer=patchProcessor.textureQuantizer()
+   
+    datapattern=np.ones((noofscales,2),dtype=np.float)
+    datapattern[:,1]=30
+    datapattern[np.ceil(noofscales/2).astype(int),:]=90
+   
+   
+    requiredKeys=frozenset(['TSRep',])
+    processorname='testing'
+    sources={'mock_tf'}
+    startTime=12.
+    
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
+    p.prerun()
+        
+    for power in np.arange(13,10,-2): 
+        
+        data1=np.tile(datapattern,2**power)
+        logger.info('Power: {0}'.format(power))
+        
+        print(data1.shape)
+        
+        not_a_composite_chunk1=compositeChunk(12, requiredKeys)
+        not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
+        not_a_composite_chunk1.received['TSRep'].continuity     = Continuity.discontinuous
+        not_a_composite_chunk1.received['TSRep'].chunkcontinuity= Continuity.discontinuous
+        not_a_composite_chunk1.received['TSRep'].initialSampleTime=startTime
+        
+        r1=p.processData(not_a_composite_chunk1.received['TSRep'])
+        startTime=startTime+data1.shape[1]/fs
+        
+ 
+        not_a_composite_chunk2=compositeChunk(13, requiredKeys)
+        not_a_composite_chunk2.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
+        not_a_composite_chunk2.received['TSRep'].continuity     = Continuity.continuous
+        not_a_composite_chunk2.received['TSRep'].chunkcontinuity= Continuity.continuous
+        not_a_composite_chunk2.received['TSRep'].initialSampleTime=startTime
+        
+        r2=p.processData(not_a_composite_chunk2.received['TSRep'])
+        startTime=startTime+data1.shape[1]/fs
+        
+    del p
+
+
+def test_memory_allocation2():
+    '''
+        Mainly testing whether memory is handled correctly, when calling 
+        the c++ code. Python code is partly responsible for allocating memory
+        when the cpp code is in use this memory cannot be garbage collected
+        without consequence. Reallocating in c++ would lead to unneeded 
+        memory usage.
+        
+        No stress here on correctness of result, therefore no check on 
+        generated output.
+    '''
+    
+    
+    fs=100
+    noofscales=49
+    startTime1=12.
+    logger = multiprocessing.log_to_stderr()
+    quantizer=patchProcessor.textureQuantizer()
+   
+    datapattern=np.ones((noofscales,2),dtype=np.float)
+    datapattern[:,1]=30
+    datapattern[np.ceil(noofscales/2).astype(int),:]=90
+   
+   
+    requiredKeys=frozenset(['TSRep',])
+    processorname='testing'
+    sources={'mock_tf'}
+    startTime=12.
+    
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
+    p.prerun()
+        
+    for power in np.arange(11,14,2): 
+        
+        data1=np.tile(datapattern,2**power)
+        logger.info('Power: {0}'.format(power))
+        
+        print(data1.shape)
+        
+        not_a_composite_chunk1=compositeChunk(12, requiredKeys)
+        not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
+        not_a_composite_chunk1.received['TSRep'].continuity     = Continuity.discontinuous
+        not_a_composite_chunk1.received['TSRep'].chunkcontinuity= Continuity.discontinuous
+        not_a_composite_chunk1.received['TSRep'].initialSampleTime=startTime
+        
+        r1=p.processData(not_a_composite_chunk1.received['TSRep'])
+        startTime=startTime+data1.shape[1]/fs
+        
+ 
+        not_a_composite_chunk2=compositeChunk(13, requiredKeys)
+        not_a_composite_chunk2.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
+        not_a_composite_chunk2.received['TSRep'].continuity     = Continuity.continuous
+        not_a_composite_chunk2.received['TSRep'].chunkcontinuity= Continuity.continuous
+        not_a_composite_chunk2.received['TSRep'].initialSampleTime=startTime
+        
+        r2=p.processData(not_a_composite_chunk2.received['TSRep'])
+        startTime=startTime+data1.shape[1]/fs
+        
+    del p
+
+
+
+
+ 
+ 
+
+
+
+
+
 def test_process_continuous_chunks():
     
     fs=100
@@ -158,13 +289,13 @@ def test_process_continuous_chunks():
     startTime2=12.+20./fs
     
     not_a_composite_chunk1=compositeChunk(12, requiredKeys)
-    not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources)
+    not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
     not_a_composite_chunk1.received['TSRep'].continuity     = Continuity.discontinuous
     not_a_composite_chunk1.received['TSRep'].chunkcontinuity= Continuity.discontinuous
     not_a_composite_chunk1.received['TSRep'].initialSampleTime=startTime1
     
     not_a_composite_chunk2=compositeChunk(13, requiredKeys)
-    not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources)
+    not_a_composite_chunk2.received['TSRep']= DataChunk(data2, startTime2, fs, processorname, sources,number=13)
     not_a_composite_chunk2.received['TSRep'].initialSampleTime=startTime2
     
     r1=p.processData(not_a_composite_chunk1.received['TSRep'])
@@ -312,6 +443,6 @@ def test_process_continuous_chunks():
                 assert(value == patch.__dict__[key])
     
       
-   
+    del p
         
     #assert(False)

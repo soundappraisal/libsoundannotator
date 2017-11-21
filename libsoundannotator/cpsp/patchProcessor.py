@@ -106,9 +106,11 @@ class Patch(object):
         self.s_range=np.array(  [   np.min([other_.s_range[0],self_.s_range[0]]),
                                     np.max([other_.s_range[1],self_.s_range[1]])]    )
         self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
+        assert self.s_range[1]>=self.s_range[0], '{0}'.format(self)
         self.t_range=np.array(  [   np.min([other_.t_range[0],self_.t_range[0]]),
                                     np.max([other_.t_range[1],self_.t_range[1]])]    )
         self.t_shape=(other_.t_shape[0]+self_.t_shape[0],)
+        assert self.t_range[1]>=self.t_range[0], '{0}'.format(self)
         self.size=other_.size+self_.size
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
@@ -247,6 +249,7 @@ class patchProcessorCore(object):
         self.inScaleDistributions=dict()
         self.newpatchlist=list()
         self.oldpatchlist=list()
+        self.mergeprepared=False
         
         self.logger.info('patchProcessorCore initialized')
         
@@ -257,12 +260,14 @@ class patchProcessorCore(object):
     def processData(self, chunk):
         result=None         # This is important to do, prevents publication of output if input is absent.
         
-        # Assuming the first data source is E
-        if chunk is not None:
+        if chunk is None:
+            return result
+               
+        if not chunk.data.shape[1]==0:
             result=dict()
-            #self.logger.info('patchProcessorCore processData with shape {0}'.format(chunk.data.shape))
+            self.logger.info('patchProcessorCore processData of chunk {0} with shape {1}'.format(chunk.number,chunk.data.shape))
             self.newpatches(chunk.data, chunk.initialSampleTime)
-            if(chunk.continuity>=Continuity.withprevious):
+            if(chunk.continuity>=Continuity.withprevious) and self.mergeprepared == chunk.number:
                 self.joinpatches()
                 
             result['matrix']=self.patchMatrix
@@ -275,7 +280,14 @@ class patchProcessorCore(object):
             self.patch_before[:]=np.array(self.patchMatrix[:,-1]) 
             self.oldpatchlist=self.newpatchlist            
             self.cumulativePatchCount+=self.N
-
+            self.mergeprepared = chunk.number+1
+            self.logger.info('Processed chunk {}'.format(chunk.number))
+        else:
+            if(chunk.continuity>=Continuity.withprevious):
+                self.logger.info('set merge prepaered flag to : {}'.format(chunk.number+1)) 
+                self.mergeprepared = chunk.number+1
+            else:
+                self.mergeprepared = False
         
         return result
 
@@ -288,16 +300,22 @@ class patchProcessorCore(object):
             self.patchMatrix=np.zeros(np.shape(self.levels),'int32')
             self.N=self.extractor.cpp_calcPatches(self.levels,self.patchMatrix)
             
+            #self.logger.info('========= A =============== noofPatches: {}'.format(self.N))             
+            
             # Correct the patch count from the raw value coming from  
             # the C++ code. In this patch count merging is ignored for simplicity.
+            keepMemoryAllocatedForCPPCode=self.patchMatrix
             self.patchMatrix=self.patchMatrix+self.cumulativePatchCount
             
-            descriptors=np.zeros([6,self.N],'int32') 
-            self.extractor.cpp_getDescriptors(descriptors)
+            self.descriptors=np.zeros([6,self.N],'int32') 
+            #self.logger.info('========= A .1=============== {}'.format(self.patchMatrix[:,0]))
+            self.extractor.cpp_getDescriptors(self.descriptors)
+            
+            #self.logger.info('========= B ===============')   
             self.newpatchlist=list()
             for patchNo in np.arange(self.N):
                 # Set simplest patch descriptors
-                newPatch=Patch(*descriptors[:,patchNo],
+                newPatch=Patch(*self.descriptors[:,patchNo],
                                 t_offset=initialSampleTime,
                                 serial_number=patchNo+self.cumulativePatchCount,
                                 samplerate=self.samplerate)
@@ -419,10 +437,9 @@ class patchProcessor(Processor):
     def processData(self,data ):
         
         chunk=data.received['TSRep']
-        if chunk is None or  chunk.data.shape[1]==0:
-            dataout=None
-        else:
-            dataout=self.patchProcessorCore.processData(chunk)
+        
+        dataout=self.patchProcessorCore.processData(chunk)
+            
         return dataout
 
     def getsamplerate(self,key):

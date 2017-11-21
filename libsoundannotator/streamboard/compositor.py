@@ -29,7 +29,18 @@ class DataChunk(object):
         framerate
     """
 
-    def __init__(self, data, startTime, fs, processorname, sources, continuity=Continuity.withprevious, number=0, alignment=chunkAlignment(), dataGenerationTime=dict(), identifier=None,metadata = dict()):
+    def __init__(self,  data, 
+                        startTime, 
+                        fs, 
+                        processorname, 
+                        sources, 
+                        continuity=Continuity.withprevious, 
+                        number=0, 
+                        alignment=chunkAlignment(), 
+                        dataGenerationTime=dict(), 
+                        identifier=None,
+                        metadata = dict(), 
+                        initialSampleTime=None):
 
         assert(type(sources) is set)
         self.sources = sources
@@ -45,6 +56,7 @@ class DataChunk(object):
         self.setDataGenerationTime(dataGenerationTime)
         self.identifier = identifier
         self.setMetaData(metadata)
+        self.initialSampleTime=initialSampleTime
 
     def getLength(self):
         return np.shape(self.data)[0]
@@ -340,10 +352,24 @@ class compositeManager(object):
             
         return dataGenerationTime,metadata,identifier
         
-    def alignIncomingChunks(self,index, continuity, chunkcontinuity, starttime, dataGenerationTime,metadata, identifier,initialSampleTime):
+    def alignIncomingChunks(self,index, 
+                                continuity, 
+                                chunkcontinuity, 
+                                starttime, 
+                                dataGenerationTime,
+                                metadata, 
+                                identifier,
+                                initialSampleTime):
+                                    
         current_composite       = self.compositeChunkList[index]
         previous_composite      = self.lastcompleted
-        to_processor_composite  = compositeChunk(current_composite.number, self.requiredKeys, starttime, dataGenerationTime, metadata, identifier,initialSampleTime)
+        to_processor_composite  = compositeChunk(current_composite.number, 
+                                                        self.requiredKeys, 
+                                                        starttime, 
+                                                        dataGenerationTime, 
+                                                        metadata, 
+                                                        identifier,
+                                                        initialSampleTime)
         
         
         
@@ -415,6 +441,7 @@ class compositeManager(object):
                                     dataGenerationTime=dataGenerationTime,
                                     metadata=metadata, 
                                     identifier=identifier,
+                                    initialSampleTime=initialSampleTime,
                                    )
                 
                 to_processor_composite.update(key,newChunk)
@@ -448,9 +475,9 @@ class compositeManager(object):
         
         InitialSampleTime=starttime
         
-        self.processor.logger.error('========== type of fsampling: {0} and value {1}'.format(type(self.alignment_in.fsampling),self.alignment_in.fsampling))
-        self.processor.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.alignment_in ),self.alignment_in ))
-        self.processor.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processor.processorAlignments),self.processor.processorAlignments ))
+        #self.processor.logger.error('========== type of fsampling: {0} and value {1}'.format(type(self.alignment_in.fsampling),self.alignment_in.fsampling))
+        #self.processor.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.alignment_in ),self.alignment_in ))
+        #self.processor.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processor.processorAlignments),self.processor.processorAlignments ))
         
         fsampling=float(self.alignment_in.fsampling) # cast to float to force non integer division in the following
         

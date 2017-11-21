@@ -24,7 +24,6 @@ import libsoundannotator.cpsp        as cpsp
 
 from libsoundannotator.streamboard                import processor
 from libsoundannotator.streamboard.continuity     import Continuity, processorAlignment
-from libsoundannotator.streamboard.compositor        import DataChunk
 
 from libsoundannotator.cpsp.structureProcessor    import  structureProcessorCore
 from libsoundannotator.cpsp.patchProcessor        import  patchProcessorCore

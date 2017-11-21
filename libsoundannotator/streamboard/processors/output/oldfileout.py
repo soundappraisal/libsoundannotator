@@ -32,7 +32,7 @@ class FileOutputProcessor(processor.OutputProcessor):
         super(FileOutputProcessor, self).__init__(*args, **kwargs)
         #set required keys to subscription keys, or to empty list
         self.requiredKeys = kwargs.get('requiredKeys', self.requiredKeys)
-        self.requiredParameters('outdir', 'classType', 'maxFileSize','SampleRate')
+        self.requiredParameters('outdir', 'maxFileSize','SampleRate')
         self.requiredParametersWithDefault(
             outdir = os.path.join(os.path.expanduser("~"), "data", "libsoundannotator"),
             classType = "HDF5Storage",
