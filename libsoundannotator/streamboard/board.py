@@ -219,10 +219,7 @@ class Board(object):
             return
 
         (fromBoard, toInstance) = multiprocessing.Pipe()
-
-        requiredKeys = [o.receiverKey for o in subscriptionorders]
-        kwargs['requiredKeys'] = requiredKeys
-
+            
         self.logger.debug("creating instance of {0}".format(processorName))
         instance = processorClass(toInstance, processorName, logdir=self.logdir, loglevel=self.loglevel, **kwargs)
 
