@@ -27,6 +27,7 @@ import multiprocessing
 from libsoundannotator.streamboard.continuity     import Continuity
 from libsoundannotator.streamboard.compositor     import DataChunk, compositeChunk
 
+import psutil , os
 
 '''
 Auxilary code for mapping connected components to a unique representation
@@ -162,13 +163,22 @@ def test_memory_allocation1():
     
     p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
     p.prerun()
-        
-    for power in np.arange(13,10,-2): 
+    
+    
+   
+    mem = psutil.virtual_memory()
+    testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)]),7,-2]
+    
+    for power in np.arange(*testrange): 
         
         data1=np.tile(datapattern,2**power)
-        logger.info('Power: {0}'.format(power))
         
-        print(data1.shape)
+        mem = psutil.virtual_memory()
+        process = psutil.Process(os.getpid())
+        mem2 = process.memory_full_info()
+        
+        logger.info('Power: {0} , free memory: {1} memory used: {2}'.format(power, mem.available, mem2.uss))
+       
         
         not_a_composite_chunk1=compositeChunk(12, requiredKeys)
         not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
@@ -205,6 +215,7 @@ def test_memory_allocation2():
     '''
     
     
+    
     fs=100
     noofscales=49
     startTime1=12.
@@ -223,11 +234,18 @@ def test_memory_allocation2():
     
     p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
     p.prerun()
-        
-    for power in np.arange(11,14,2): 
+  
+    mem = psutil.virtual_memory()
+    testrange=[7,np.min([14, np.floor(np.log2(mem.available/20000.)).astype(np.int32)]),2]
+    
+    for power in np.arange(*testrange): 
         
         data1=np.tile(datapattern,2**power)
-        logger.info('Power: {0}'.format(power))
+        mem = psutil.virtual_memory()
+        process = psutil.Process(os.getpid())
+        mem2 = process.memory_full_info()
+        
+        logger.info('Power: {0} , free memory: {1} memory used: {2}'.format(power, mem.available, mem2.uss))
         
         print(data1.shape)
         
