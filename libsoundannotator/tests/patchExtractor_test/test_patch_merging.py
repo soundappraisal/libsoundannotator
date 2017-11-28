@@ -167,7 +167,7 @@ def test_memory_allocation1():
     
    
     mem = psutil.virtual_memory()
-    testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-3]),7,-2]
+    testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-2]),7,-2]
     logger.info('Available Memory: {0}  '.format(mem.available))
     
     for power in np.arange(*testrange): 
