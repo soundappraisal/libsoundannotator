@@ -27,7 +27,8 @@ import multiprocessing
 from libsoundannotator.streamboard.continuity     import Continuity
 from libsoundannotator.streamboard.compositor     import DataChunk, compositeChunk
 
-import psutil , os, gc
+from  psutil import virtual_memory
+import  gc 
 
 '''
 Auxilary code for mapping connected components to a unique representation
@@ -166,7 +167,7 @@ def test_memory_allocation1():
     
     
    
-    mem = psutil.virtual_memory()
+    mem = virtual_memory()
     testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-3]),7,-2]
     print('Available Memory: {0}  '.format(mem.available))
     
@@ -175,7 +176,7 @@ def test_memory_allocation1():
         print('Power: {0}  '.format(power))
         data1=np.tile(datapattern,2**power)
         
-        mem = psutil.virtual_memory()
+        mem = virtual_memory()
         print('Memory: {0}  '.format(mem.available))
                 
         not_a_composite_chunk1=compositeChunk(12, requiredKeys)
@@ -218,6 +219,7 @@ def test_memory_allocation2():
     '''
     
     
+    gc.collect()
     
     fs=100
     noofscales=49
@@ -238,7 +240,7 @@ def test_memory_allocation2():
     p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
     p.prerun()
   
-    mem = psutil.virtual_memory()
+    mem = virtual_memory()
     testrange=[7,np.min([14, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-3]),2]
     
     for power in np.arange(*testrange): 
@@ -248,7 +250,7 @@ def test_memory_allocation2():
         
         data1=np.tile(datapattern,2**power)
         
-        mem = psutil.virtual_memory()
+        mem = virtual_memory()
         print('Memory: {0}  '.format(mem.available))
       
         print('Data shape: {0}  '.format(data1.shape))
@@ -272,11 +274,7 @@ def test_memory_allocation2():
         r2=p.processData(not_a_composite_chunk2.received['TSRep'])
         startTime=startTime+data1.shape[1]/fs
         
-        del data1, r1, r2 ,not_a_composite_chunk1, not_a_composite_chunk2
-        gc.collect()
-    
-    del p
-    gc.collect()
+
 
 
 
@@ -288,6 +286,9 @@ def test_memory_allocation2():
 
 
 def test_process_continuous_chunks():
+    
+    
+    gc.collect()
     
     fs=100
     
@@ -474,7 +475,6 @@ def test_process_continuous_chunks():
             else:
                 assert(value == patch.__dict__[key])
     
-      
-    
+def test_run_garbage_collection():
+    gc.collect()
         
-    #assert(False)
