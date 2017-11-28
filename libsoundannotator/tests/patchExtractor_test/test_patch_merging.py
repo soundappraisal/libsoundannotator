@@ -28,7 +28,8 @@ from libsoundannotator.streamboard.continuity     import Continuity
 from libsoundannotator.streamboard.compositor     import DataChunk, compositeChunk
 
 from  psutil import virtual_memory
-import  gc 
+from time import sleep
+from gc import collect
 
 '''
 Auxilary code for mapping connected components to a unique representation
@@ -199,10 +200,10 @@ def test_memory_allocation1():
         startTime=startTime+data1.shape[1]/fs
         
         del data1, r1, r2 ,not_a_composite_chunk1, not_a_composite_chunk2
-        gc.collect()
+        collect()
     
     del p
-    gc.collect()
+    collect()
 
 
 
@@ -219,7 +220,7 @@ def test_memory_allocation2():
     '''
     
     
-    gc.collect()
+    collect()
     
     fs=100
     noofscales=49
@@ -288,7 +289,7 @@ def test_memory_allocation2():
 def test_process_continuous_chunks():
     
     
-    gc.collect()
+    collect()
     
     fs=100
     
@@ -476,5 +477,6 @@ def test_process_continuous_chunks():
                 assert(value == patch.__dict__[key])
     
 def test_run_garbage_collection():
-    gc.collect()
+    sleep(.5)
+    collect()
         
