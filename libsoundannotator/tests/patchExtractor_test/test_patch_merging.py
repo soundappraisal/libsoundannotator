@@ -167,12 +167,16 @@ def test_memory_allocation1():
     
    
     mem = psutil.virtual_memory()
-    testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-1]),7,-2]
+    testrange=[np.min([13, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-3]),7,-2]
+    logger.info('Available Memory: {0}  '.format(mem.available))
     
     for power in np.arange(*testrange): 
         
         logger.info('Power: {0}  '.format(power))
         data1=np.tile(datapattern,2**power)
+        
+        mem = psutil.virtual_memory()
+        logger.info('Memory: {0}  '.format(mem.available))
                 
         not_a_composite_chunk1=compositeChunk(12, requiredKeys)
         not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
@@ -230,7 +234,7 @@ def test_memory_allocation2():
     p.prerun()
   
     mem = psutil.virtual_memory()
-    testrange=[7,np.min([14, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-1]),2]
+    testrange=[7,np.min([14, np.floor(np.log2(mem.available/20000.)).astype(np.int32)-3]),2]
     
     for power in np.arange(*testrange): 
         
@@ -238,6 +242,9 @@ def test_memory_allocation2():
         logger.info('Power: {0}  '.format(power))
         
         data1=np.tile(datapattern,2**power)
+        
+        mem = psutil.virtual_memory()
+        logger.info('Memory: {0}  '.format(mem.available))
       
         print(data1.shape)
         
