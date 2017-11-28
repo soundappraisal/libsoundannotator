@@ -171,15 +171,9 @@ def test_memory_allocation1():
     
     for power in np.arange(*testrange): 
         
+        logger.info('Power: {0}  '.format(power))
         data1=np.tile(datapattern,2**power)
-        
-        mem = psutil.virtual_memory()
-        process = psutil.Process(os.getpid())
-        mem2 = process.memory_full_info()
-        
-        logger.info('Power: {0} , free memory: {1} memory used: {2}'.format(power, mem.available, mem2.uss))
-       
-        
+                
         not_a_composite_chunk1=compositeChunk(12, requiredKeys)
         not_a_composite_chunk1.received['TSRep'] = DataChunk(data1, startTime1, fs, processorname, sources,number=12)
         not_a_composite_chunk1.received['TSRep'].continuity     = Continuity.discontinuous
@@ -240,13 +234,11 @@ def test_memory_allocation2():
     
     for power in np.arange(*testrange): 
         
+        
+        logger.info('Power: {0}  '.format(power))
+        
         data1=np.tile(datapattern,2**power)
-        mem = psutil.virtual_memory()
-        process = psutil.Process(os.getpid())
-        mem2 = process.memory_full_info()
-        
-        logger.info('Power: {0} , free memory: {1} memory used: {2}'.format(power, mem.available, mem2.uss))
-        
+      
         print(data1.shape)
         
         not_a_composite_chunk1=compositeChunk(12, requiredKeys)
