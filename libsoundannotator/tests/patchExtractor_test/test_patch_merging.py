@@ -29,7 +29,23 @@ from libsoundannotator.streamboard.compositor     import DataChunk, compositeChu
 
 from  psutil import virtual_memory
 from time import sleep
-from gc import collect
+
+from multiprocessing import Process, Queue
+
+class TestProcess(Process):
+    
+    def __init__(self,*args,**kwargs):
+        self.myQueue=kwargs['args'][0]
+        super(TestProcess,self).__init__(*args,**kwargs)
+        
+    def run(self):
+        result=None
+        try:
+            super(TestProcess,self).run()
+        except Exception as e:
+            result = e 
+        self.myQueue.put(result)
+
 
 '''
 Auxilary code for mapping connected components to a unique representation
@@ -132,9 +148,10 @@ def test_join_double_bulk_connection():
     validpatches=p.cpp_calcJoinMatrix(tex_before, tex_after, patch_before, patch_after, joinMatrix )
     print('joinMatrix:{0}, validpatches:{1}'.format(joinMatrix[0:validpatches,:],validpatches))
     np.testing.assert_equal(joinMatrixExpected,joinMatrix)
-    #assert(False)
+    
+    
 
-def test_memory_allocation1():
+def memory_allocation_exercise1(myQueue):
     '''
         Mainly testing whether memory is handled correctly, when calling 
         the c++ code. Python code is partly responsible for allocating memory
@@ -200,14 +217,19 @@ def test_memory_allocation1():
         startTime=startTime+data1.shape[1]/fs
         
         del data1, r1, r2 ,not_a_composite_chunk1, not_a_composite_chunk2
-        collect()
+
+def test_memory_allocation_exercise1():
+    logger = multiprocessing.log_to_stderr()
+    myQueue=Queue()
+    p = TestProcess(target=memory_allocation_exercise1, args=[myQueue,],name='TestProcess')
+    p.start()
+    p.join() # this blocks until the process terminates
+    result=myQueue.get()
+    if not result is None:
+        raise result
     
-    del p
-    collect()
 
-
-
-def test_memory_allocation2():
+def memory_allocation_exercise2(myQueue):
     '''
         Mainly testing whether memory is handled correctly, when calling 
         the c++ code. Python code is partly responsible for allocating memory
@@ -218,10 +240,7 @@ def test_memory_allocation2():
         No stress here on correctness of result, therefore no check on 
         generated output.
     '''
-    
-    
-    collect()
-    
+     
     fs=100
     noofscales=49
     startTime1=12.
@@ -278,18 +297,21 @@ def test_memory_allocation2():
 
 
 
+def test_memory_allocation_exercise2():
+    logger = multiprocessing.log_to_stderr()
+    myQueue=Queue()
+    p = TestProcess(target=memory_allocation_exercise2, args=[myQueue,],name='TestProcess2')
+    p.start()
+    p.join() # this blocks until the process terminates
+    result=myQueue.get()
+    if not result is None:
+        raise result
 
- 
- 
 
 
 
 
-
-def test_process_continuous_chunks():
-    
-    
-    collect()
+def process_continuous_chunks(myQueue):
     
     fs=100
     
@@ -476,7 +498,16 @@ def test_process_continuous_chunks():
             else:
                 assert(value == patch.__dict__[key])
     
-def test_run_garbage_collection():
-    sleep(.5)
-    collect()
-        
+
+
+
+def test_process_continuous_chunks():
+    logger = multiprocessing.log_to_stderr()
+    myQueue=Queue()
+    p = TestProcess(target=process_continuous_chunks, args=[myQueue,],name='TestProcess3')
+    p.start()
+    p.join() # this blocks until the process terminates
+    result=myQueue.get()
+    if not result is None:
+        raise result
+
