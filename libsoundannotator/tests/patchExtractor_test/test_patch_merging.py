@@ -32,6 +32,18 @@ from time import sleep
 
 from multiprocessing import Process, Queue
 
+
+''' Some of the test in this file are very memory intensive and thus 
+create a grow of memory consumption. This leads to problems when later 
+processes are forking, because the child process is forked with the 
+same amount of memory as the parent. To prevent this from causing 
+memory allocation related errors the most memory intensive tests 
+now run in separate processes. Also they contain checks to allocate no 
+more memory than present at execution time. 
+
+The TestProces class is used for this purpose to ease the propagation 
+of exceptions from child to parent. ''' 
+
 class TestProcess(Process):
     
     def __init__(self,*args,**kwargs):
