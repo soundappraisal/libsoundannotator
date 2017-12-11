@@ -86,12 +86,14 @@ class FileOutputProcessor(processor.OutputProcessor):
             for key in compositeChunk.received:
                 chunk = compositeChunk.received[key]
 
-                if chunk.data.dtype != self.config['datatype']:
-                    #convert to config data type if possible
-                    chunk.data = chunk.data.astype(self.config['datatype'])
-
-                self.addChunkToDataset(self.h5pyf, key, chunk)
-
+                if type(chunk.data) is np.ndarray:
+                    if chunk.data.dtype != self.config['datatype']:
+                        #convert to config data type if possible
+                        chunk.data = chunk.data.astype(self.config['datatype'])
+                    self.addChunkToDataset(self.h5pyf, key, chunk)
+                else:
+                    raise TypeError('FileOutputProcessor cannot handle incoming chunk of type: {0}'.format(type(chunk.data)))
+                    
         #close handle to prevent corruption
         self.logger.info('Closing h5py handle')
         
