@@ -84,12 +84,13 @@ class ScenarioLine(DataChunk):
                 dataGenerationTime=dict(), 
                 identifier=None, 
                 chunkcontinuity=None, 
-                metadata=dict(),**kwargs):
+                metadata=dict(),
+                initialSampleTime=0,
+                **kwargs):
         
         self.processorinstance=processorinstance
         self.featurename=featurename
         self.inout=inout
-              
         
         if inout =='out':
             self.chunkcontinuity=chunkcontinuity
@@ -108,6 +109,7 @@ class ScenarioLine(DataChunk):
                             dataGenerationTime=dataGenerationTime, 
                             identifier=identifier, 
                             metadata=metadata,
+                            initialSampleTime=initialSampleTime,
                             **kwargs)
         
       
@@ -373,7 +375,10 @@ class CompositeTester(processor.Processor):
                     
         if not set(self.compositeManager.sources) == set(scenarioline.sources):
             raise ValueError('compositeManager contains different sources than expected,\n \n compositeChunk: {0} \n expected: {1}'.format(self.compositeManager.sources,scenarioline.sources))
-            
+        
+        if not compositeChunk.initialSampleTime == scenarioline.initialSampleTime :
+            raise ValueError('incorrect initialSampleTime, recieved : {0:.6f} expected: {1:.6f} difference: {2:.6f}'.format(compositeChunk.initialSampleTime, scenarioline.initialSampleTime,compositeChunk.initialSampleTime-scenarioline.initialSampleTime))
+        
         '''
         if not self.compositeManager.compositeChunkList[indexfordebugger].identifier == scenarioline.identifier:
             raise ValueError('compositeChunk has incorrect identifier,\n compositeChunk: |{0}| \n expected: |{1}|'.format(self.compositeManager.compositeChunkList[indexfordebugger].identifier, scenarioline.identifier))

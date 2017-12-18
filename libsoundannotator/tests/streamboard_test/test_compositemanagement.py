@@ -78,6 +78,29 @@ def my_teardown_function():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_reproduction_sts49():
+    '''
+    Issue: STS-49
+    When inspecting the logs of the Raspberry Pi at a deployment site, 
+    we noticed that an error was being thrown in the getInputs funtion 
+    of the Resampler. 
+    
+    The error message was: Could not recv data: maximum recursion depth 
+    exceeded while calling a Python object. 
+    
+    Analysis:
+    The recursion depth was exceeded if many intermediate smart chunks 
+    had to be created, this occured in case communication between 
+    microphone and server was lost for a long time. We introduced a new 
+    handling of incoming chunks which avoids recursive function calls, 
+    and consequently the recursion limit is no longer limiting the 
+    maximal length of a communication failure from which the framework 
+    can recover.
+    
+    This test makes sure this error is not reintroduced.
+
+    '''
+    
+    
     global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
@@ -95,6 +118,8 @@ def test_reproduction_sts49():
     scenario_processor.sources=set(['microphone',])
     
     tested_processor_name='TestedC'
+    tested_processorAlignment=processorAlignment(fsampling=fs) 
+    
     subscriptionsorders=[
     SubscriptionOrder(processor_name,tested_processor_name, 'A','A'),
     SubscriptionOrder(processor_name,tested_processor_name, 'B','B'),
@@ -169,7 +194,8 @@ def test_reproduction_sts49():
                             number=0,                       #optional: number=0, 
                             alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime=dict(), 
-                            identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            identifier='/my/pathname/myfile.wav', #optional: identifier=None,
+                            initialSampleTime=1449478633.333646,
                             )
                             
     outputscenario_C.appendScenarioLine(None, 'C','in',
@@ -183,12 +209,13 @@ def test_reproduction_sts49():
                             alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            initialSampleTime=1449478633.333646,
                             )
-                            
+                       
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
                             scenario=outputscenario_C,
-                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            processoralignment={'C':tested_processorAlignment},
                             requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
@@ -266,6 +293,7 @@ def test_calibrationflow():
                             alignment=chunkAlignment(fsampling=fs), #optional: alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            initialSampleTime=1449478633.333646,
   )
                             
     testboard.startProcessor(tested_processor_name, CompositeTester,
@@ -361,6 +389,7 @@ def test_fileprocessingflow():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                             
@@ -459,6 +488,7 @@ def test_online_processingflow():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                             
@@ -554,6 +584,7 @@ def test_online_processingflow_withgap():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                         
@@ -651,6 +682,7 @@ def test_online_processingflow_illegalovertaking():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
@@ -756,6 +788,7 @@ def test_online_processingflow_lostintransmission0A():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
@@ -861,6 +894,7 @@ def test_online_processingflow_lostintransmission2B():
                                 alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
