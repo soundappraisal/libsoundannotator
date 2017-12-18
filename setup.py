@@ -25,6 +25,7 @@ code is included in the source tree.
 
 '''
 from setuptools import setup, find_packages, Extension
+from distutils.util import get_platform
 import pkg_resources
 import textwrap
 import os, sys
