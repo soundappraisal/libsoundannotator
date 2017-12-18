@@ -262,7 +262,7 @@ class InputProcessor(BaseProcessor):
         super(InputProcessor, self).__init__(boardConn, name, **kwargs)
         self.subscriptions = dict()
         
-        self.processorAlignments=dict()
+        
         #genesis chunk
         self.oldchunk = DataChunk([],dict(), 0, self.name, set([name]), number=0)
         #add metadata to it if given, else None
@@ -313,12 +313,12 @@ class InputProcessor(BaseProcessor):
         # If no data is given, return. This will prevent the system collapsing when a Processor
         # already has a check for subscriptions but chooses to continue anyway
         if data is None:
-            #self.logger.debug("Processor {0} published empty data".format(self.name))
+            self.logger.info("Processor {0} generated empty data, not publishing".format(self.name))
             return
 
         data['technicalkey']=None
         for subscriptionorder, subscriber in self.subscriptions.viewitems():
-            self.logger.info('Processor {0} sendingKey:{1} receiverKey:{2} continuity:{3} '.format(self.name,subscriber.senderKey,subscriber.receiverKey, continuity))
+            self.logger.info('Processor {0} publishing with sendingKey:{1} receiverKey:{2} continuity:{3} '.format(self.name,subscriber.senderKey,subscriber.receiverKey, continuity))
 
             #wildcard discards data
             if (subscriber.senderKey == '*'):
@@ -335,7 +335,7 @@ class InputProcessor(BaseProcessor):
                 number=number,
                 alignment=self.getAlignment(subscriber.senderKey),
                 dataGenerationTime = generationTime,
-                identifier = identifier
+                identifier = identifier,
             )
             chunk.setMetaData(metadata)
             try:
@@ -399,12 +399,30 @@ class InputProcessor(BaseProcessor):
         return dict()
     
     def getAlignment(self,key):
-        chunkalignment=chunkAlignment()
+        chunkalignment=chunkAlignment(fsampling=self.getsamplerate(key))
+        
+        
+        
         if key in self.processorAlignments:
+            #self.logger.error('========== type of fsampling: {0} and value {1}'.format(type(self.processorAlignments[key].fsampling),self.processorAlignments[key].fsampling))
+            #self.logger.error('========== type of self.alignment_in: {0} and value {1}'.format(type(self.processorAlignments[key] ),self.processorAlignments[key] ))
+            #self.logger.error('========== type of self.processor.processorAlignments: {0} and value {1}'.format(type(self.processorAlignments),self.processorAlignments ))
+            if self.processorAlignments[key].fsampling is None:
+                raise ValueError('fsampling should be set on processor {0} for key {1}'.format(self.name,key))
             return chunkalignment.impose_processor_alignment(self.processorAlignments[key])
         
         return chunkalignment
+    
+    
         
+    def setProcessorAlignments(self):        
+        ''' 
+        setProcessorAlignments: this function should set the dictionary self.processorAlignments. 
+        
+        minimal implementation: self.processorAlignments=dict()
+        '''
+        self.overrideError('setProcessorAlignments')
+
         
 class Processor(InputProcessor):
     """ Processor that gets input from one or more other processors,
@@ -489,6 +507,8 @@ class Processor(InputProcessor):
    
     def getAlignment(self,key):
         return self.compositeManager.getAlignment(key)
+        
+    
         
 class OutputProcessor(Processor):
     """ Processor that gets input from one or more processors

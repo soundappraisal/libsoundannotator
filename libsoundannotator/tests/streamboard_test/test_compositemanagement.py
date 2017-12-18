@@ -16,21 +16,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-'''
-    
-    Author:     Ronald A.J. van Elburg, RonaldAJ@vanElburg.eu
-    Copyright:  SoundAppraisal B.V.
 
-    With this test we try to test composite management. Its first development preceded refactoring from smartChunks to the compositeManager/compositeChunks. To allow this test to run in both situations we don't access smartChunk functionality directly but only through interprocessor communication.  At present (August 2016, git-sha: 4df4c81e git-msg begin: STS-49: Design files for refactoring smartChunks.) there are no plans to change this interprocessor communication. 
-
-    The Scenario.play method makes use of the internal structure of a processor to make it publish a single chunk from the scenario. So I had to expose some of the internals of the processor to gets this to work. Important changes in these internals can therefore break these tests even when functionality and underlying conceptual model remain unchanged. A possible solution to this at present hypothetical problem is to keep the CompositeTester based on the old version while constructing new version of the tested processors. This still requires that the new processors would be compatible with the board.
-    
+Author:     Ronald A.J. van Elburg, RonaldAJ@vanElburg.eu
+  
 '''
 
 from nose import with_setup
 from streamboard_testing_tools import TestBoard, Scenario, ChunkEmitter, CompositeTester
-from libsoundannotator.streamboard.continuity     import Continuity, chunkAlignment, processorAlignment
+from libsoundannotator.streamboard.continuity     import Continuity, processorAlignment, chunkAlignment
 import logging, time, sys
 import numpy as np
 
@@ -67,10 +60,12 @@ def test_appendScenarioLine0():
             
             
 def my_setup_function():
-    global testboard, logger 
+    global testboard, logger, fs 
     '''
         The TestBoard class is a tool used for reproducing the STS49 error while letting the test suite finish. The implementation is dubious at best so reuse at your own peril.
     '''
+    
+    fs=44100
     testboard = TestBoard(loglevel=logging.INFO, logdir='.', logfile='TestBoard') # Setting loglevel is needed under windows
     logger=testboard.logger
     
@@ -83,7 +78,30 @@ def my_teardown_function():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_reproduction_sts49():
-    global testboard, logger     
+    '''
+    Issue: STS-49
+    When inspecting the logs of the Raspberry Pi at a deployment site, 
+    we noticed that an error was being thrown in the getInputs funtion 
+    of the Resampler. 
+    
+    The error message was: Could not recv data: maximum recursion depth 
+    exceeded while calling a Python object. 
+    
+    Analysis:
+    The recursion depth was exceeded if many intermediate smart chunks 
+    had to be created, this occured in case communication between 
+    microphone and server was lost for a long time. We introduced a new 
+    handling of incoming chunks which avoids recursive function calls, 
+    and consequently the recursion limit is no longer limiting the 
+    maximal length of a communication failure from which the framework 
+    can recover.
+    
+    This test makes sure this error is not reintroduced.
+
+    '''
+    
+    
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -94,11 +112,14 @@ def test_reproduction_sts49():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
     tested_processor_name='TestedC'
+    tested_processorAlignment=processorAlignment(fsampling=fs) 
+    
     subscriptionsorders=[
     SubscriptionOrder(processor_name,tested_processor_name, 'A','A'),
     SubscriptionOrder(processor_name,tested_processor_name, 'B','B'),
@@ -110,12 +131,12 @@ def test_reproduction_sts49():
     inputscenario.appendScenarioLine(scenario_processor, 'A','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,       #sources, 
                             Continuity.discontinuous  ,    #continuity, 
                             number=0,  #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
                             )
@@ -123,12 +144,12 @@ def test_reproduction_sts49():
     inputscenario.appendScenarioLine(scenario_processor, 'B','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,       #sources, 
                             Continuity.discontinuous ,    #continuity, 
                             number=0,  #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
                             )
@@ -137,12 +158,12 @@ def test_reproduction_sts49():
     inputscenario.appendScenarioLine(scenario_processor, 'A','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,        #sources, 
                             Continuity.withprevious  ,    #continuity, 
                             number =sys.getrecursionlimit()+1,              #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
                             )
@@ -150,12 +171,12 @@ def test_reproduction_sts49():
     inputscenario.appendScenarioLine(scenario_processor, 'B','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,        #sources, 
                             Continuity.withprevious  ,    #continuity, 
                             number =sys.getrecursionlimit()+1,              #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav',#optional: identifier=None
                             )
@@ -166,32 +187,36 @@ def test_reproduction_sts49():
     outputscenario_C.appendScenarioLine(None, 'C','in',
                             {'A':np.ones((2000,100)),'B':np.ones((2000,100))},        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             set(['microphone',]),        #sources, 
                             Continuity.discontinuous ,      #continuity, 
                             number=0,                       #optional: number=0, 
-                            alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                            alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime=dict(), 
-                            identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            identifier='/my/pathname/myfile.wav', #optional: identifier=None,
+                            initialSampleTime=1449478633.333646,
                             )
                             
     outputscenario_C.appendScenarioLine(None, 'C','in',
                             {'A':np.ones((2000,100)),'B':np.ones((2000,100))},        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             set(['microphone',]),                    #sources, 
                             Continuity.discontinuous,     #continuity, 
                             number=sys.getrecursionlimit()+1,  #optional: number=0, 
-                            #optional: alignment=chunkAlignment(), 
+                            alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            initialSampleTime=1449478633.333646,
                             )
-                            
+                       
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':tested_processorAlignment},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -204,7 +229,7 @@ def test_reproduction_sts49():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_calibrationflow():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -215,7 +240,8 @@ def test_calibrationflow():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -231,12 +257,12 @@ def test_calibrationflow():
     inputscenario.appendScenarioLine(scenario_processor, 'A','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,       #sources, 
                             Continuity.calibrationChunk ,    #continuity, 
                             number=1,  #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
                             )
@@ -244,12 +270,12 @@ def test_calibrationflow():
     inputscenario.appendScenarioLine(scenario_processor, 'B','out',
                             np.ones((2000,100)),        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             scenario_processor.sources,       #sources, 
                             Continuity.calibrationChunk ,    #continuity, 
                             number=1,  #optional: number=0, 
-                            #optional: alignment=processorAlignment(), 
+                            alignment=processorAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
                             )
@@ -259,19 +285,22 @@ def test_calibrationflow():
     outputscenario_C.appendScenarioLine(None, 'C','in',
                             {'A':np.ones((2000,100)),'B':np.ones((2000,100))},        #data, 
                             1449478633.333646,          #startTime, 
-                            41000,                      #fs, 
+                            fs,                      #fs, 
                             processor_name,             #processorName, 
                             set(['microphone',]),        #sources, 
                             Continuity.calibrationChunk ,      #continuity, 
                             number=1,                       #optional: number=0, 
-                            alignment=chunkAlignment(), #optional: alignment=chunkAlignment(), 
+                            alignment=chunkAlignment(fsampling=fs), #optional: alignment=chunkAlignment(fsampling=fs), 
                             #optional: dataGenerationTime={processorname:time}, 
                             identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                            initialSampleTime=1449478633.333646,
   )
                             
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C ,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'])
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -284,7 +313,7 @@ def test_calibrationflow():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_fileprocessingflow():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -295,7 +324,8 @@ def test_fileprocessingflow():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -309,7 +339,7 @@ def test_fileprocessingflow():
     time.sleep(0.05)
     
     
-    fs=41000
+ 
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -328,7 +358,7 @@ def test_fileprocessingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -341,7 +371,7 @@ def test_fileprocessingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -356,15 +386,18 @@ def test_fileprocessingflow():
                                 set(['microphone',]),      #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                             
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -379,7 +412,7 @@ def test_fileprocessingflow():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_online_processingflow():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -390,7 +423,8 @@ def test_online_processingflow():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -403,8 +437,7 @@ def test_online_processingflow():
     
     time.sleep(0.05)
     
-    
-    fs=41000
+
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -426,7 +459,7 @@ def test_online_processingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -439,7 +472,7 @@ def test_online_processingflow():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -452,16 +485,18 @@ def test_online_processingflow():
                                 set(['microphone',]),      #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                             
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
-    
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'])
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
     
@@ -473,7 +508,7 @@ def test_online_processingflow():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_online_processingflow_withgap():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -484,7 +519,8 @@ def test_online_processingflow_withgap():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -497,8 +533,7 @@ def test_online_processingflow_withgap():
     
     time.sleep(0.05)
     
-    
-    fs=41000
+  
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -518,7 +553,7 @@ def test_online_processingflow_withgap():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -531,7 +566,7 @@ def test_online_processingflow_withgap():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -546,15 +581,18 @@ def test_online_processingflow_withgap():
                                 set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                                 
                         
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -567,7 +605,7 @@ def test_online_processingflow_withgap():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_online_processingflow_illegalovertaking():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -578,7 +616,8 @@ def test_online_processingflow_illegalovertaking():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -591,8 +630,7 @@ def test_online_processingflow_illegalovertaking():
     
     time.sleep(0.05)
     
-    
-    fs=41000
+
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -613,7 +651,7 @@ def test_online_processingflow_illegalovertaking():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -626,7 +664,7 @@ def test_online_processingflow_illegalovertaking():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -641,9 +679,10 @@ def test_online_processingflow_illegalovertaking():
                                 set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
@@ -656,7 +695,9 @@ def test_online_processingflow_illegalovertaking():
     
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -670,7 +711,7 @@ def test_online_processingflow_illegalovertaking():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_online_processingflow_lostintransmission0A():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -681,7 +722,8 @@ def test_online_processingflow_lostintransmission0A():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -695,7 +737,6 @@ def test_online_processingflow_lostintransmission0A():
     time.sleep(0.05)
     
     
-    fs=41000
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -716,7 +757,7 @@ def test_online_processingflow_lostintransmission0A():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -729,7 +770,7 @@ def test_online_processingflow_lostintransmission0A():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -744,9 +785,10 @@ def test_online_processingflow_lostintransmission0A():
                                 set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
@@ -760,7 +802,9 @@ def test_online_processingflow_lostintransmission0A():
     
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)} ,
+                            requiredKeys=['A','B'])
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
@@ -774,7 +818,7 @@ def test_online_processingflow_lostintransmission0A():
 
 @with_setup(my_setup_function,my_teardown_function)  
 def test_online_processingflow_lostintransmission2B():
-    global testboard, logger     
+    global testboard, logger, fs    
     
     inputscenario=Scenario(logger)
     processor_name='AB_Test'
@@ -785,7 +829,8 @@ def test_online_processingflow_lostintransmission2B():
     SubscriptionOrder('virtualpre','AB_Test', 'B','preB'),
     ]
     
-    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True)
+    testboard.createOnBoardTestProcessor(processor_name, ChunkEmitter, *subscriptionsorders, onBoard=True,
+                            processoralignment={'A':processorAlignment(fsampling=fs),'B':processorAlignment(fsampling=fs)})
     scenario_processor=testboard.processors[processor_name][0]
     scenario_processor.sources=set(['microphone',])
     
@@ -797,9 +842,7 @@ def test_online_processingflow_lostintransmission2B():
    
     
     time.sleep(0.05)
-    
-    
-    fs=41000
+
     chunkwidth=2000
     delta_t=float(chunkwidth)/fs
     outputscenario_C = Scenario(logger)
@@ -820,7 +863,7 @@ def test_online_processingflow_lostintransmission2B():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -833,7 +876,7 @@ def test_online_processingflow_lostintransmission2B():
                                 scenario_processor.sources,       #sources, 
                                 continuity ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                #optional: alignment=processorAlignment(), 
+                                alignment=processorAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
                                 )
@@ -848,9 +891,10 @@ def test_online_processingflow_lostintransmission2B():
                                 set(['microphone',]),      #sources, 
                                 continuity_out ,    #continuity, 
                                 number=number,  #optional: number=0, 
-                                alignment=chunkAlignment(),#optional: alignment=chunkAlignment(), 
+                                alignment=chunkAlignment(fsampling=fs),#optional: alignment=chunkAlignment(fsampling=fs), 
                                 #optional: dataGenerationTime={processorname:time}, 
                                 identifier='/my/pathname/myfile.wav', #optional: identifier=None
+                                initialSampleTime=1449478633.333646+tsteps*delta_t,
                                 )
                             
     # Introduce the illegal overtake
@@ -864,7 +908,9 @@ def test_online_processingflow_lostintransmission2B():
     
     testboard.startProcessor(tested_processor_name, CompositeTester,
                             *subscriptionsorders, 
-                            scenario=outputscenario_C )
+                            scenario=outputscenario_C,
+                            processoralignment={'C':processorAlignment(fsampling=fs)},
+                            requiredKeys=['A','B'] )
     
     test_processor_C=testboard.processors[tested_processor_name][0]                         
     test_processor_C.sources=set(['microphone',])
