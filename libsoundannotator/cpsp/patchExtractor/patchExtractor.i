@@ -19,6 +19,8 @@ limitations under the License.
 */
 %module patchExtractor
 
+%feature("autodoc", "1");
+
 %{
 #define SWIG_FILE_WITH_INIT
 
@@ -55,6 +57,7 @@ import_array()
     if (PyErr_Occurred()) SWIG_fail;
 
 }
+
 
 class patchExtractor{ 
 public:
