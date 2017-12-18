@@ -25,9 +25,9 @@ code is included in the source tree.
 
 '''
 from setuptools import setup, find_packages, Extension
-from distutils.util import get_platform
+import pkg_resources
+import textwrap
 import os, sys
-import numpy as np
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -36,22 +36,30 @@ import numpy as np
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+def is_installed(requirement):
+    try:
+        pkg_resources.require(requirement)
+    except pkg_resources.ResolutionError:
+        return False
+    else:
+        return True
+
+if not is_installed('numpy>=1.11.0'):
+    print(textwrap.dedent("""
+            Error: numpy needs to be installed first. You can install it via:
+
+            $ pip install numpy>=1.11.0
+            """))
+    sys.exit(1)
+
+import numpy as np
+
 # Generate meta-data for Git
 from libsoundannotator.config.generateMetaData import generateMetaData
 generateMetaData()
 
 extra_link_args=[]
-required_packages= [
-            'numpy>=1.8.0',
-            'scipy>=0.13.0',
-            'pyaudio>=0.2.7',
-            'nose>=1.3.1',
-            'setproctitle>=1.0.1',
-            'psutil>=0.4.1',
-            'h5py>=2.2.1',
-            'lz4>=0.7.0',
-            'redis>=2.10.1',
-        ]
+required_packages= read('requirements.txt').split('\n')
 
 
 if sys.platform.startswith('win'):

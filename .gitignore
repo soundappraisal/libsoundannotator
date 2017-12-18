@@ -90,3 +90,6 @@ ENV/
 
 # libsoundannotator logs
 *.log.*
+
+# PyCharm editor
+.idea
