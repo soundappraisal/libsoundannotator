@@ -45,12 +45,15 @@ def is_installed(requirement):
     else:
         return True
 
-if not is_installed('numpy>=1.11.0'):
+required_packages= read('requirements.txt').split('\n')
+required_numpy_version=[requirement.split('>=')[1] for requirement in required_packages if requirement.split('>=')[0] == 'numpy'][0]
+
+if not is_installed('numpy>={0}'.format(required_numpy_version)):
     print(textwrap.dedent("""
             Error: numpy needs to be installed first. You can install it via:
 
-            $ pip install numpy>=1.11.0
-            """))
+            $ pip install numpy>={0}
+            """.format(required_numpy_version)))
     sys.exit(1)
 
 import numpy as np

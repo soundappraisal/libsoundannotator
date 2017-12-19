@@ -57,7 +57,6 @@ import os.path as path
 import multiprocessing, logging
 import os,sys
 import shutil
-import h5py 
 import time
 
 from libsoundannotator.streamboard                import processor
