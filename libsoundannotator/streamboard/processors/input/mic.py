@@ -21,7 +21,7 @@ import numpy as np
 import time, math, pyaudio, random, sys
 
 from libsoundannotator.streamboard 				import processor
-from libsoundannotator.streamboard.continuity 	import Continuity
+from libsoundannotator.streamboard.continuity 	import Continuity, processorAlignment
 
 from libsoundannotator.io.micinput 			  	import MicInput
 from libsoundannotator.io.micinput 			  	import MicInputOverflowedException, MicInputException
@@ -49,9 +49,11 @@ class MicInputProcessor(processor.InputProcessor):
 								channels=self.config['Channels'],
 								readSize=self.config['ChunkSize'])
 		self.logmsg['info'].append(self.reader)
+		self.samplerate=self.config['SampleRate']
 
 	def prerun(self):
 		super(MicInputProcessor, self).prerun()
+		self.setProcessorAlignments()
 
 		self.stayAlive = True
 		while self.stayAlive:
@@ -117,3 +119,14 @@ class MicInputProcessor(processor.InputProcessor):
 		
 	def getTimeStamp(self,key):
 		return self.timeStamp
+
+	def getsamplerate(self, key):
+		return self.samplerate
+
+
+	def setProcessorAlignments(self): 
+		'''
+		 setProcessorAlignments: assign empty dict to self.processorAlignments   
+		'''
+		self.processorAlignments=dict()
+		self.processorAlignments['sound']=processorAlignment(fsampling=self.getsamplerate('sound'))
