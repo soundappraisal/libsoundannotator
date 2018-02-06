@@ -44,10 +44,11 @@ class MicInputProcessor(processor.InputProcessor):
 		self.openMicInput=False
 		super(MicInputProcessor, self).__init__(*args, **kwargs)
 		self.requiredParameters('SampleRate', 'ChunkSize')
-		self.requiredParametersWithDefault(DeviceIndex=0, Channels=1)
+		self.requiredParametersWithDefault(DeviceIndex=0, Channels=1,Microphone=None)
 		self.reader = MicInput(rate=self.config['SampleRate'],
 								channels=self.config['Channels'],
-								readSize=self.config['ChunkSize'])
+								readSize=self.config['ChunkSize'],
+								inputDevices=self.config['Microphone'])
 		self.logmsg['info'].append(self.reader)
 		self.samplerate=self.config['SampleRate']
 
