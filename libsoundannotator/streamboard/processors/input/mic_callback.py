@@ -23,7 +23,7 @@ import math, pyaudio, random
 import sys, subprocess
 
 from libsoundannotator.streamboard 				import processor
-from libsoundannotator.streamboard.continuity 	import Continuity
+from libsoundannotator.streamboard.continuity 	import Continuity, processorAlignment
 
 from libsoundannotator.io.micinput 			  	import MicInputCallback
 from libsoundannotator.io.micinput 			  	import MicInputOverflowedException, MicInputException
@@ -122,6 +122,7 @@ class MicInputProcessor(processor.InputProcessor):
 
 	def prerun(self):
 		super(MicInputProcessor, self).prerun()
+		self.setProcessorAlignments()
 
 		self.stayAlive = True
 		while self.stayAlive:
@@ -149,8 +150,10 @@ class MicInputProcessor(processor.InputProcessor):
 
 
 	def process(self):
+		self.currentTimeStamp = time.time() #provide a reasonable default time, for more precision provide timestamp in generateData of the derived class
 		data = self.generateData()
-		self.publish(data, self.continuity, self.getTimeStamp(), self.getchunknumber(), time.time(), metadata=self.oldchunk.getMetaData())
+		if not data is None:
+			self.publish(data, self.continuity, self.getTimeStamp('sound'), self.getchunknumber(), {self.name:self.currentTimeStamp}, metadata=self.oldchunk.getMetaData())
 
 
 	def generateData(self):
@@ -161,8 +164,9 @@ class MicInputProcessor(processor.InputProcessor):
 			micchunk=self.fifo.pop()
 
 		frames = np.fromstring(micchunk.in_data, dtype=self.reader.getdtype())
-		self.currentTimeStamp=micchunk.time_info['input_buffer_adc_time']+self.boottime
-
+		#self.currentTimeStamp=time.time()
+		self.timeStamp=micchunk.time_info['input_buffer_adc_time']+self.boottime
+		
 
 		dataout=dict()
 		dataout['sound'] = frames
@@ -180,5 +184,14 @@ class MicInputProcessor(processor.InputProcessor):
 		self.reader.close()
 		super(MicInputProcessor, self).finalize()
 
-#	def getTimeStamp(self,key):
-#		return self.timeStamp
+	def getTimeStamp(self,key):
+		return self.timeStamp
+		
+		
+	def setProcessorAlignments(self): 
+		'''
+		 setProcessorAlignments: assign empty dict to self.processorAlignments   
+		'''
+		self.processorAlignments=dict()
+		self.processorAlignments['sound']=processorAlignment(fsampling=self.getsamplerate('sound'))
+
