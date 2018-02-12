@@ -63,7 +63,7 @@ class MicInput(object):
 		#read size may be larger than maxBufferSize. Defaults to half of max buffe
 		self.readSize = kwargs.get('readSize', self.maxBufferSize / 4)
 		#as a consequence, a too large requested read size will be truncated silently
-		self.bufferSize = self.maxBufferSize / 4
+		self.bufferSize = self.maxBufferSize / 8
 		#define a buffer in case more frames than one stream buffer can contain need to be read out
 		self.buffer = np.array([], dtype=self.dtypes[self.format]);
 
@@ -151,14 +151,16 @@ class MicInput(object):
 				#...but things can still go wrong
 				except IOError as e:
 					#For instance, a buffer overflow
-					if e.strerror == pyaudio.paInputOverflowed:
+					if e.errno == pyaudio.paInputOverflowed:
 						if logger is not None:
 							logger.error("Mic input overflow")
+						#self.bufferSize=int(self.bufferSize/2)
+						self.open(logger)
 						raise MicInputOverflowedException(e)
 					#Or a yet unknown exception
 					else:
 						if logger is not None:
-							logger.error("Mic input exception: {0}".format(e))
+							logger.error("Mic input exception: {0}, {1}".format(e,type(e)))
 						#propagate the exception sensibly
 						raise MicInputException(str(e))
 				except Exception as e:
@@ -252,11 +254,14 @@ class MicInput(object):
 			raise e
 
 	def isActive(self):
+		_isActive=False
+		
 		if self.stream is not None:
-			if self.stream.is_active():
-				return True
-
-		return False
+			try:
+				_isActive=self.stream.is_active()
+			except IOError as e:
+				print('IOError on calling isActive: {0}'.format(e))
+		return _isActive
 
 	def getFormatString(self):
 		return self.paNames[self.format]
