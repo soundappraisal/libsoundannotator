@@ -270,19 +270,26 @@ class ChunkEmitter(processor.Processor):
 class CompositeTester(processor.Processor):
     
     def __init__(self, boardConn, name, onBoard=False, **kwargs):
+        
+        # These parameters are not json serializable, so we won't pass them on to parent class.
+        self.processorAlignments=kwargs['processoralignment']
+        self.scenario=kwargs['scenario'] # For a receiving CompositeTester to store the expected compositeChunks 
+        
+        del kwargs['processoralignment']
+        del kwargs['scenario'] 
+        
         super(CompositeTester,self).__init__(boardConn, name, **kwargs)
         
-        self.requiredParameters('scenario')
+        #self.requiredParameters('scenario')
         
-        self.requiredParametersWithDefault(requiredKeys=[], processoralignment=dict())
+        self.requiredParametersWithDefault(requiredKeys=[])#, processoralignment=dict())
         self.requiredKeys=self.config['requiredKeys']
-        self.processorAlignments=self.config['processoralignment']
         
         
        
         
             
-        self.scenario=self.config['scenario'] # For a receiving CompositeTester to store the expected compositeChunks 
+        
 
 
 

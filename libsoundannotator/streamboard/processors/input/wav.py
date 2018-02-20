@@ -19,13 +19,16 @@ limitations under the License.
 '''
 import os, time
 import numpy as np
-from json import dumps
 
 from libsoundannotator.streamboard                import processor
 from libsoundannotator.streamboard.continuity     import Continuity, processorAlignment
 
 from libsoundannotator.io.wavinput                import WavChunkReader
 from libsoundannotator.io.hdfinput                import HdfChunkReader
+
+
+from json import loads, dumps
+from hashlib import sha1
 
 class WavProcessor(processor.InputProcessor):
     def __init__(self, conn, name, *args, **kwargs):
@@ -41,6 +44,7 @@ class WavProcessor(processor.InputProcessor):
         self.AddWhiteNoise = self.config['AddWhiteNoise']
         self.newFileContinuity=self.config['newFileContinuity']
         self.startLatency = self.config['startLatency']
+        self.source=None
     
     def prerun(self):
         super(WavProcessor, self).prerun()
@@ -72,14 +76,12 @@ class WavProcessor(processor.InputProcessor):
             self.reader = WavChunkReader(soundfile.filehandle)
             if not self.samplerate == self.reader.getSamplerate():
                 raise  RuntimeError('Sample rate of file is inconsistent with specified sample rate')
-                
-            self.oldchunk.metadata['file_id']=soundfile.file_id              # This fields is used to determine name of the outputfile in the FileWriter
-            self.oldchunk.metadata['duration']=self.reader.getDuration()
+             
+            self.source=dict()
+            self.source['source_id']=soundfile.file_id              # This fields is used to determine name of the outputfile in the FileWriter
+            self.source['duration']=self.reader.getDuration()
             if soundfile.extra_args:
-                self.oldchunk.metadata['annotation']=dumps(soundfile.extra_args)
-            
-            
-                    
+                self.source['annotation']=dumps(soundfile.extra_args)
         elif soundfile.storagetype == 'hdf':
             self.reader = HdfChunkReader(soundfile.filehandle)
         else:
@@ -160,7 +162,7 @@ class WavProcessor(processor.InputProcessor):
         data['sound'] =frames
         
         self.continuity=Continuity.last
-        self.publish(data, self.continuity, self.getTimeStamp(None), self.getchunknumber(), {self.name:time.time()}, metadata=self.oldchunk.getMetaData())
+        self.publish(data, self.continuity, self.getTimeStamp(None), self.getchunknumber(), {self.name:time.time()}, metadata=self.getMetaData())
 
        
     def setProcessorAlignments(self): 
@@ -169,3 +171,19 @@ class WavProcessor(processor.InputProcessor):
         '''
         self.processorAlignments=dict()
         self.processorAlignments['sound']=processorAlignment(fsampling=self.getsamplerate('sound'))
+
+
+
+    def getMetaData(self):
+        self.config_serializable=self.config.copy()
+        del self.config_serializable['SoundFiles']
+        
+        if not self.source is None:
+            self.config_serializable['source_id']=self.source['source_id']
+            self.config_serializable['duration']=self.source['duration']
+            if 'annotation' in self.source.keys():
+                self.config_serializable['annotation']=self.source['annotation']
+        
+        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        return  {self.name: (config_hash, config_json)}

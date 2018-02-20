@@ -30,6 +30,11 @@ from libsoundannotator.streamboard.continuity    import Continuity
 
 import scipy.signal as sig
 import sys
+
+
+from json import loads, dumps
+from hashlib import sha1
+
 """
 
         Overlap-and-add filter implemented as an streamboard processor
@@ -374,6 +379,17 @@ class Resampler(OAFilterbank):
 
 
 
+    def getMetaData(self):  
+        self.config_serializable=self.config.copy()
+        #print self.config_serializable
+        self.config_serializable['dTypeIn']='{0}'.format(self.config['dTypeIn'])
+        self.config_serializable['dTypeOut']='{0}'.format(self.config['dTypeOut'])
+        self.config_serializable['DataType']='{0}'.format(self.config['DataType'])
+        
+        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        
+        return  config_hash, config_json
 
 
 

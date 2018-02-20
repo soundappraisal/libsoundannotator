@@ -18,10 +18,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging, multiprocessing, os, glob, sys, datetime, h5py
+from json import loads, dumps
+from hashlib import sha1
 
 def getLocation(metadata, config):
-    if config['usefile_id']:
-        location=os.path.basename(metadata['file_id'])
+    if 'usesource_id' in config.keys() and config['usesource_id'] is True:
+        sourcedata=loads(metadata[config['source_processor']][1])
+        location=os.path.basename(sourcedata['source_id'])
     elif 'location' in metadata.keys():
         location=metadata['location'].replace(' ', '')
     else: # provide reasonable default

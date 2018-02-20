@@ -62,8 +62,6 @@ class FileOutputProcessor(processor.OutputProcessor):
 
     def processData(self, compositeChunk):
         metadata = compositeChunk.metadata
-        self.logger.info("Received smart chunk with metadata: {0}".format(metadata))
-
         outdir = self.outdir
         location = util.getLocation(metadata, self.config)
         self.logger.info('Location: {}'.format(location))

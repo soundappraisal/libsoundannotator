@@ -24,10 +24,13 @@ import logger as streamboard_logger
 import logging
 import multiprocessing.connection
 
+
 from continuity     import Continuity, chunkAlignment, processorAlignment
 from messages       import BoardMessage, NetworkMessage, ProcessorMessage
 from compositor     import compositeChunk, compositeManager, DataChunk
 from subscription   import NetworkConnection, NetworkSubscriptionOrder, Subscription
+from json import loads, dumps
+from hashlib import sha1
 
 try:
     from network        import NoNetworkException, ClosedSocketException, NotSameSocketException, BusyNetworkException
@@ -264,7 +267,7 @@ class InputProcessor(BaseProcessor):
         self.subscriptions = dict()
         
         #genesis chunk
-        self.oldchunk = DataChunk([],dict(), 0, self.name, set([self.name]), number=0, metadata = kwargs.get('metadata', dict()))
+        self.oldchunk = DataChunk([],dict(), 0, self.name, set([self.name]), number=0)
         self.continuity=Continuity.discontinuous
         
     def prerun(self):
@@ -283,7 +286,7 @@ class InputProcessor(BaseProcessor):
     def process(self):
         self.currentTimeStamp = time.time() #provide a reasonable default time, for more precision provide timestamp in generateData of the derived class
         data = self.generateData()
-        self.publish(data, self.continuity, self.getTimeStamp(None), self.getchunknumber(), {self.name:self.currentTimeStamp}, metadata=self.oldchunk.getMetaData())
+        self.publish(data, self.continuity, self.getTimeStamp(None), self.getchunknumber(), {self.name:self.currentTimeStamp}, metadata=self.getMetaData())
 
     def getchunknumber(self):
         return self.oldchunk.number+1
@@ -389,7 +392,9 @@ class InputProcessor(BaseProcessor):
     
          
     def getMetaData(self):
-        return dict()
+        config_json=dumps(self.config, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        return  config_hash, config_json
     
     def getAlignment(self,key):
         chunkalignment=chunkAlignment(fsampling=self.getsamplerate(key))

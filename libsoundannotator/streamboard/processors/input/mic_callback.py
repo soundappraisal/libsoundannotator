@@ -150,7 +150,7 @@ class MicInputProcessor(processor.InputProcessor):
 
 	def process(self):
 		data = self.generateData()
-		self.publish(data, self.continuity, self.getTimeStamp(), self.getchunknumber(), time.time(), metadata=self.oldchunk.getMetaData())
+		self.publish(data, self.continuity, self.getTimeStamp(), self.getchunknumber(), time.time(), metadata=self.getMetaData())
 
 
 	def generateData(self):

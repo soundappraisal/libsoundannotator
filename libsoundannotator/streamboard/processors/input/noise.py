@@ -23,6 +23,9 @@ import time
 from libsoundannotator.streamboard               import processor
 from libsoundannotator.streamboard.continuity    import Continuity
 
+from json import loads, dumps
+from hashlib import sha1
+
 class NoiseChunkGenerator(processor.InputProcessor):
 
     """ NoiseChunkGenerator:
@@ -90,3 +93,10 @@ class NoiseChunkGenerator(processor.InputProcessor):
          setProcessorAlignments: assign empty dict to self.processorAlignments   
         '''
         self.processorAlignments=dict()
+
+
+    def getMetaData(self):
+        self.config_serializable=self.config.copy()        
+        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        return  {self.name: (config_hash, config_json)}

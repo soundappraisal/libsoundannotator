@@ -28,6 +28,8 @@ from libsoundannotator.streamboard.continuity    import Continuity, chunkAlignme
 
 import time
 import os
+from json import loads, dumps
+from hashlib import sha1
 
 # Define pi for use in calculation gammachirps.
 pi = np.pi
@@ -244,7 +246,17 @@ class GCFBProcessor(OAFilterbank):
         self.setProcessorAlignments()
 
     def getMetaData(self):  
-        return {'fMap':self.factory.f}
+        self.config_serializable=self.config.copy()
+        #print self.config_serializable
+        self.config_serializable['dTypeIn']='{0}'.format(self.config['dTypeIn'])
+        self.config_serializable['dTypeOut']='{0}'.format(self.config['dTypeOut'])
+        self.config_serializable['DataType']='{0}'.format(self.config['DataType'])
+        self.config_serializable['fMap']='{0}'.format(self.factory.f)
+        
+        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        
+        return  config_hash, config_json
         
     def processData(self, data):
         """ processData: Process a signal using the gamma chirp filterbank (GCFB)

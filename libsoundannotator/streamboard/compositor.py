@@ -65,13 +65,13 @@ class DataChunk(object):
         if type(metadata) == dict:
             self.metadata = metadata
         else:
-            raise ValueError('DataChunk Metadata should be of type dict')
+            raise ValueError('DataChunk Metadata should be of type dict, processorname= {0}, metadata= {1}'.format(self.processorname,metadata))
     
     def setDataGenerationTime(self,dataGenerationTime):
         if type(dataGenerationTime) == dict:
             self.dataGenerationTime = dataGenerationTime
         else:
-            raise ValueError('DataChunk dataGenerationTime should be of type dict, type discover is {}'.format(type(dataGenerationTime)))
+            raise ValueError('DataChunk dataGenerationTime should be of type dict, processorname= {0}, type discovered is {1}'.format(self.processorname,type(dataGenerationTime)))
     
     
     def getMetaData(self):
@@ -324,7 +324,8 @@ class compositeManager(object):
         compositechunk=self.compositeChunkList[index]
         dataGenerationTime=dict({self.processor.name:time.time()})
         identifier = None
-        metadata   = self.processor.getMetaData()
+        metadata=dict()
+        metadata[self.processor.name]   = self.processor.getMetaData()
         
         for key in self.requiredKeys:
             chunk=compositechunk.received[key]
