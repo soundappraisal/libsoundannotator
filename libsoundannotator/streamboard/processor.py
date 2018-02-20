@@ -42,7 +42,7 @@ class BaseProcessor(multiprocessing.Process):
         'NetworkTimeout': 10
     }
 
-    def __init__(self, boardConn, name, logdir, loglevel=None, **kwargs):
+    def __init__(self, boardConn, name, logdir=None, loglevel=None, **kwargs):
         super(BaseProcessor, self).__init__()
         # Don't use logging before calling addloger
         if(sys.platform=='win32'):
@@ -212,6 +212,7 @@ class BaseProcessor(multiprocessing.Process):
         for par in pars:
             if not par in self.config:
                 self.logmsg['error'].append('{0} not set, this wil lead to problems!'.format(par))
+                raise ValueError('{0} not set on processor {1}'.format(par,self.name))
 
     def requiredParametersWithDefault(self, **pars):
         for (par, default) in pars.items():
@@ -262,16 +263,8 @@ class InputProcessor(BaseProcessor):
         super(InputProcessor, self).__init__(boardConn, name, **kwargs)
         self.subscriptions = dict()
         
-        
         #genesis chunk
-        self.oldchunk = DataChunk([],dict(), 0, self.name, set([name]), number=0)
-        #add metadata to it if given, else None
-        metadata = kwargs.get('metadata', dict())
-        if metadata is not dict():
-            self.oldchunk.setMetaData(metadata)
-        else:
-            self.logmsg['info'].append("Metadata was not set")
-
+        self.oldchunk = DataChunk([],dict(), 0, self.name, set([self.name]), number=0, metadata = kwargs.get('metadata', dict()))
         self.continuity=Continuity.discontinuous
         
     def prerun(self):
@@ -335,9 +328,9 @@ class InputProcessor(BaseProcessor):
                 number=number,
                 alignment=self.getAlignment(subscriber.senderKey),
                 dataGenerationTime = generationTime,
+                metadata = metadata,
                 identifier = identifier,
             )
-            chunk.setMetaData(metadata)
             try:
                 subscriber.connection.send(chunk)
             except NoNetworkException as e:

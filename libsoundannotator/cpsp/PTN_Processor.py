@@ -274,11 +274,10 @@ class PTN_Processor(processor.Processor):
         return {'pulse':Po,'tone':To,'noise':No,'energy':Eo}
 
 
-    def publish(self, data, continuity, starttime,number,generationTime, 
-                    metadata=None, identifier=None):
+    def publish(self, data, continuity, starttime,number,generationTime, *args, **kwargs):
         
         super(PTN_Processor, self).publish(data, self.getcontinuity(), self.getstarttime(),self.getnumber(),generationTime, 
-                    metadata, identifier)
+                    *args, **kwargs)
                     
         if data is not None:
             self.number += 1

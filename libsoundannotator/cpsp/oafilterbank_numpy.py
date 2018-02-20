@@ -81,13 +81,13 @@ class OAFilterbank(processor.Processor):
         if len(np.shape(filter_t))==1:
             self.nseg = 1
             self.kernelZ = fft.fft(filter_t,self.nfft)
-            self.overlap = np.empty([self.nOverlap, ], dtype=self.config['DataType'])
+            self.overlap = np.zeros([self.nOverlap, ], dtype=self.config['DataType'])
             self.oafilter = self.process1D
             
         elif len(np.shape(filter_t)) == 2:
             self.nseg = np.shape(filter_t)[1]
             self.kernelZ = fft.fft(filter_t,self.nfft,0)
-            self.overlap = np.empty([self.nOverlap, self.nseg], dtype=self.config['DataType'])
+            self.overlap = np.zeros([self.nOverlap, self.nseg], dtype=self.config['DataType'])
             self.oafilter = self.process2D
         else: # len(np.shape(filter_t)) > 2:
             raise ValueError('Input filter should be a 1D or 2D vector')

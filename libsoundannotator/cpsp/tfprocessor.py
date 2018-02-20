@@ -19,19 +19,17 @@ limitations under the License.
 '''
 # -*- coding: u8 -*-
 import numpy as np
+
+
 import math
 import sys
 from oafilterbank_numpy import OAFilterbank
-
 from libsoundannotator.streamboard.continuity    import Continuity, chunkAlignment, processorAlignment
-
 
 import time
 import os
-from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment, tostring
-import xml.etree.ElementTree as ET
 
-
+# Define pi for use in calculation gammachirps.
 pi = np.pi
 
 
@@ -85,9 +83,6 @@ class GCFilterBank(object):
         # If no arguments are given, use default configuration
         if len(args) == 0:
             self.config = self.defaultGCFBConfig
-        
-        
-        
         
         # Otherwise check if argument is a dictionary
         else:
@@ -232,83 +227,29 @@ class GCFBProcessor(OAFilterbank):
     requiredKeys=['timeseries']
     
     def __init__(self,boardConn, name,*args, **kwargs):
-        self.GCConfig=kwargs
         
         super(GCFBProcessor, self).__init__(boardConn, name, *args, **kwargs)
-        self.requiredParameters('metadata')
         self.requiredParametersWithDefault(
-            mode='EdB', 
             samplesPerFrame=5
         ) 
-        self.mode=self.config['mode']
-        self.script_started=self.config['metadata']['script_started']
-
-
+        
         self.F_dB=20./np.log2(10.)  # Conversion factor for going from magnitude to log energy in dB using log2
-        
-        self.xmloutput=False
-        if 'globalOutputPathModifier' in kwargs:
-            self.PathModifier='{0}-{1}'.format(self.config['globalOutputPathModifier'],self.script_started)
-            
-            self.resultspath=os.path.join(self.config['baseOutputDir'],self.PathModifier)
-            if not os.path.exists(self.resultspath):
-                os.makedirs(self.resultspath)
-            
-            self.xmlmetafilename_relative='{0}_MetaData.xml'.format(self.name)
-            self.xmlmetafilename=os.path.join(self.resultspath,self.xmlmetafilename_relative)
-            self.xmloutput=True 
-        
         self.offset=0
 
     def prerun(self):
-        self.factory = GCFilterBank(self.GCConfig)
+        
+        self.factory = GCFilterBank(self.config)
         self.filter_t = self.factory.getFilterBank()
         super(GCFBProcessor, self).prerun()
-        if self.xmloutput:
-            self.writexml()
         self.setProcessorAlignments()
 
-    def writexml(self):
-        xmlmetafile=open(self.xmlmetafilename,'w+')
-        xmlmetaroot=Element('Gammachirp_parameters')
-        xmlmetatree=ElementTree(xmlmetaroot)
-        f_map   = SubElement(xmlmetaroot,'frequency_map')
-        f_map.text=''.join(['{0:.2f}, '.format(frequency) for frequency in self.factory.f])
-        
-        nodelist=list()
-        for key in ['nseg', 'fmin','fmax','SampleRate','n']:
-            newnode = SubElement(xmlmetaroot,key)
-            newnode.text ='{0:d}'.format(self.factory.config[key])
-            nodelist.append(newnode)
-        
-        for key in ['samplesPerFrame']:
-            newnode = SubElement(xmlmetaroot,key)
-            newnode.text ='{0:d}'.format(self.config[key])
-            nodelist.append(newnode)
-        
-        for key in ['desiredT','B','C','ch']:
-            newnode = SubElement(xmlmetaroot,key)
-            newnode.text ='{0:.2f}'.format(self.factory.config[key])
-            nodelist.append(newnode)
-        
-        filteroverlap=SubElement(xmlmetaroot,'filteroverlap')
-        filteroverlap.text='{0:d}'.format(self.nOverlap)
-        
-        blocklength=SubElement(xmlmetaroot,'blocklength')
-        blocklength.text='{0:d}'.format(self.nBlock)
-        
-        xmlmetatree.write(xmlmetafile)
-        xmlmetafile.close()
-        
     def getMetaData(self):  
         return {'fMap':self.factory.f}
         
     def processData(self, data):
-        """ Process a signal using the GCFB
-            Valid mode:
-                 'EdB': return log energy
-                 'Amp': return response magnitude
-            Returns tuple (EdB, Amp) if any other value than string 'Amp' or 'EdB' given.
+        """ processData: Process a signal using the gamma chirp filterbank (GCFB)
+            
+            Returns a dictionary containing E and EdB.
         """
         # Assuming the first data source is audio
         audioChunk = data.received['timeseries']
@@ -323,9 +264,9 @@ class GCFBProcessor(OAFilterbank):
             
             amplitudes = self.oafilter(audioChunk.data, audioChunk.continuity)
             
-            thinned=np.absolute(amplitudes[:,self.offset::self.GCConfig['samplesPerFrame']])
+            thinned=np.absolute(amplitudes[:,self.offset::self.config['samplesPerFrame']])
             
-            self.offset=np.remainder(self.offset-np.shape(amplitudes)[-1],self.GCConfig['samplesPerFrame'])
+            self.offset=np.remainder(self.offset-np.shape(amplitudes)[-1],self.config['samplesPerFrame'])
             
             
             result['E']=np.square(thinned)
@@ -341,11 +282,8 @@ class GCFBProcessor(OAFilterbank):
         return self.F_dB*np.log2(thinned)
 
     def getsamplerate(self,key):
-        return self.config['SampleRate']/self.GCConfig['samplesPerFrame']
+        return self.config['SampleRate']/self.config['samplesPerFrame']
         
-        
-
-         
     def setProcessorAlignments(self): 
         '''
          setProcessorAlignments: set processorAlignment for the 
