@@ -25,8 +25,8 @@ def getLocation(metadata, config):
     if 'usesource_id' in config.keys() and config['usesource_id'] is True:
         sourcedata=loads(metadata[config['source_processor']][1])
         location=os.path.basename(sourcedata['source_id'])
-    elif 'location' in metadata.keys():
-        location=metadata['location'].replace(' ', '')
+    elif 'location' in config.keys():
+        location=config['location'].replace(' ', '_')
     else: # provide reasonable default
         datadir=os.path.join(os.path.expanduser('~'),'soundannotator_data')
         if  not os.path.isdir(datadir):
