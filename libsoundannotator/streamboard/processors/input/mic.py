@@ -131,3 +131,8 @@ class MicInputProcessor(processor.InputProcessor):
 		'''
 		self.processorAlignments=dict()
 		self.processorAlignments['sound']=processorAlignment(fsampling=self.getsamplerate('sound'))
+
+
+	def getMetaData(self):
+		
+		return  {self.name: super(MicInputProcessor, self).getMetaData()}
