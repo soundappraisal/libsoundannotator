@@ -179,7 +179,7 @@ class compositeManager(object):
         if  index >= 0:
             status=self.compositeChunkList[index].update(receiverKey, chunk)
         else:
-            self.processor.logger.warning('Received a chunk with an outdated chunknumber.')
+            self.processor.logger.warning('Received a chunk with an outdated chunknumber: {0} while index is at: {1}'.format(chunk.number, self.index0number))
         
         if status==compositeChunk.complete:
             self.processCompositeChunk(index)
