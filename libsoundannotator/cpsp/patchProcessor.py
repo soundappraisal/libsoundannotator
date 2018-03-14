@@ -25,6 +25,10 @@ from libsoundannotator.streamboard.continuity import Continuity, processorAlignm
 import patchExtractor as patchExtractor 
 import uuid, copy
 
+
+from json import loads, dumps
+from hashlib import sha1
+
 class Quantizer(object):
     def levels(self, data):
          self.overrideError('processData')
@@ -47,9 +51,9 @@ class textureQuantizer(Quantizer):
 
 class Patch(object):
     
-    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=None, serial_number=0, samplerate=0, **kwargs):
+    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=None, typelabel=None, serial_number=0, samplerate=0, **kwargs):
         self.identifier=uuid.uuid1()
-        self.typelabel=None
+        self.typelabel=typelabel
         self.level=level
         self.s_shape=(s_high-s_low+1,)
         self.s_range=np.array([s_low,s_high])
@@ -238,6 +242,7 @@ class patchProcessorCore(object):
         self.noofscales=kwargs['noofscales']
         self.logger=kwargs['logger']
         self.samplerate=kwargs['SampleRate']
+        self.typelabel=kwargs['PatchType']
         
         self.tex_after=np.zeros([self.noofscales],'int32')
         self.patch_after=np.zeros([self.noofscales],'int32') 
@@ -322,7 +327,8 @@ class patchProcessorCore(object):
                 newPatch=Patch(*self.descriptors[:,patchNo],
                                 t_offset=initialSampleTime,
                                 serial_number=patchNo+self.cumulativePatchCount,
-                                samplerate=self.samplerate)
+                                samplerate=self.samplerate,
+                                typelabel=self.typelabel)
                 
                 # Get and set in row count of timescale pixels
                 inScaleCount=np.zeros(newPatch.s_shape,'int32')
@@ -427,7 +433,7 @@ class patchProcessor(Processor):
         super(patchProcessor, self).__init__(boardConn, name,*args, **kwargs)
         self.args=args
         self.kwargs=kwargs
-        self.requiredParameters('SampleRate')
+        self.requiredParameters('SampleRate','TS_Rep')
         self.samplerate=self.config['SampleRate']
         self.setProcessorAlignments()
         
@@ -435,6 +441,9 @@ class patchProcessor(Processor):
         super(patchProcessor, self).prerun()
         self.kwargs['logger']=self.logger
         self.kwargs['SampleRate']=self.samplerate
+        
+        self.kwargs['SampleRate']=self.samplerate
+        self.kwargs['PatchType']={'ts_rep':self.config['TS_Rep'],'quantizer':type(self.config['quantizer']).__name__ }
         self.patchProcessorCore=patchProcessorCore(*self.args,**self.kwargs)
         self.patchProcessorCore.prerun()
 
@@ -458,3 +467,13 @@ class patchProcessor(Processor):
         
         for featureName in self.featurenames: 
             self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName))
+
+
+    def getMetaData(self):
+        self.config_serializable=self.config.copy()
+        self.config_serializable['quantizer']=type(self.config_serializable['quantizer']).__name__
+        
+        
+        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_hash=sha1(config_json).hexdigest()
+        return  config_hash, config_json
