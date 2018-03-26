@@ -192,7 +192,11 @@ def memory_allocation_exercise1(myQueue):
     sources={'mock_tf'}
     startTime=12.
     
-    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,
+                                        noofscales=noofscales, 
+                                        logger=logger,
+                                        SampleRate=fs,
+                                        PatchType={'ts_rep':'mock_tf','quantizer':type(quantizer).__name__ })
     p.prerun()
     
     
@@ -269,7 +273,11 @@ def memory_allocation_exercise2(myQueue):
     sources={'mock_tf'}
     startTime=12.
     
-    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=noofscales, logger=logger,SampleRate=fs)
+    p=patchProcessor.patchProcessorCore(    quantizer=quantizer,
+                                            noofscales=noofscales, 
+                                            logger=logger,
+                                            SampleRate=fs,
+                                            PatchType={'ts_rep':'mock_tf','quantizer':type(quantizer).__name__ })
     p.prerun()
   
     mem = virtual_memory()
@@ -329,7 +337,11 @@ def process_continuous_chunks(myQueue):
     
     logger = multiprocessing.log_to_stderr()
     quantizer=patchProcessor.textureQuantizer()
-    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=10, logger=logger,SampleRate=fs)
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,
+                                        noofscales=10, 
+                                        logger=logger,
+                                        SampleRate=fs,                                       
+                                        PatchType={'ts_rep':'mock_tf','quantizer':type(quantizer).__name__ })
     p.prerun()
     
     requiredKeys=frozenset(['TSRep',])
@@ -422,7 +434,7 @@ def process_continuous_chunks(myQueue):
     
     expectedPatchesChunk1=dict()
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=0 
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0, 9] 
@@ -432,7 +444,7 @@ def process_continuous_chunks(myQueue):
     dummy['serial_number']=0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=1 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
@@ -442,7 +454,7 @@ def process_continuous_chunks(myQueue):
     dummy['serial_number']=1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=2 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
@@ -457,7 +469,7 @@ def process_continuous_chunks(myQueue):
 
     expectedPatchesChunk2=dict()
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=0 
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0,9] 
@@ -467,7 +479,7 @@ def process_continuous_chunks(myQueue):
     dummy['serial_number']=0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=2 
     dummy['s_shape']=(6,)  
     dummy['s_range']=[4 ,9] 
@@ -477,7 +489,7 @@ def process_continuous_chunks(myQueue):
     dummy['serial_number']=2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=1 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
@@ -489,22 +501,22 @@ def process_continuous_chunks(myQueue):
 
     #print('{0}, {1}'.format(r1,r2))
     for patch in r1['patches']:
-        print '==1======= \n {} \n ====='.format(patch)
+        logger.info('==1======= \n {} \n ====='.format(patch))
         dummy=expectedPatchesChunk1[patch.serial_number]
         for key, value in dummy.items():
-            print('key: {0}, value: {1}'.format(key,value))
+            logger.info('key: {0}, value: {1}'.format(key,value))
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
             else:
                 assert(value == patch.__dict__[key])
     
     for patch in r2['patches']:
-        print '==2======= \n {0} \n ======='.format(patch)
+        logger.info('==2======= \n {0} \n ======='.format(patch))
         dummy=expectedPatchesChunk2[patch.serial_number]
         for key, value in dummy.items():
-            print('key: {0}, value: {1}'.format(key,value))
+            logger.info('key: {0}, value: {1}'.format(key,value))
             assert(key in patch.__dict__.keys())
-            print('value: {0}'.format(patch.__dict__[key]))
+            logger.info('value: {0}'.format(patch.__dict__[key]))
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
             else:
@@ -519,6 +531,7 @@ def test_process_continuous_chunks():
     p = TestProcess(target=process_continuous_chunks, args=[myQueue,],name='TestProcess3')
     p.start()
     p.join() # this blocks until the process terminates
+    
     result=myQueue.get()
     if not result is None:
         raise result
@@ -531,7 +544,11 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     
     logger = multiprocessing.log_to_stderr()
     quantizer=patchProcessor.textureQuantizer()
-    p=patchProcessor.patchProcessorCore(quantizer=quantizer,noofscales=10, logger=logger,SampleRate=fs)
+    p=patchProcessor.patchProcessorCore(quantizer=quantizer,
+                                        noofscales=10, 
+                                        logger=logger,
+                                        SampleRate=fs,
+                                        PatchType={'ts_rep':'mock_tf','quantizer':type(quantizer).__name__ })
     p.prerun()
     
     requiredKeys=frozenset(['TSRep',])
@@ -624,7 +641,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     
     expectedPatchesChunk1=dict()
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=0 
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0, 9] 
@@ -634,7 +651,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['serial_number']=0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=1 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
@@ -644,7 +661,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['serial_number']=1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'} 
     dummy['level']=2 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
@@ -659,7 +676,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
 
     expectedPatchesChunk2=dict()
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=0 
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0,9] 
@@ -669,7 +686,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['serial_number']=0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=2 
     dummy['s_shape']=(6,)  
     dummy['s_range']=[4 ,9] 
@@ -679,7 +696,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['serial_number']=2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
-    dummy['typelabel']=None 
+    dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
     dummy['level']=1 
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
