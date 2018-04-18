@@ -20,7 +20,7 @@ limitations under the License.
 from nose import with_setup
 import libsoundannotator.cpsp as cpsp
 
-from  libsoundannotator.cpsp.patchProcessor import joinDistributions, Patch
+from  libsoundannotator.cpsp.patchProcessor import joinScaleDistributions, Patch
 import numpy as np 
 
 def test_discontinuous_merge():
@@ -41,10 +41,10 @@ def test_discontinuous_merge():
     newweight_expected[0:10]=weights1
     newweight_expected[-15:]=weights2
     
-    newdist, newrange, newweights=joinDistributions(dist1, dist2, range1, range2, weights1, weights2 )
+    newdist,  newweights=joinScaleDistributions(dist1, dist2, range1, range2, weights1, weights2 )
     
     np.testing.assert_almost_equal(newdist_expected,newdist)
-    np.testing.assert_equal(newrange_expected,newrange)
+    #np.testing.assert_equal(newrange_expected,newrange)
     np.testing.assert_equal(newweight_expected,newweights)
     
     
@@ -66,10 +66,10 @@ def test_continuous_merge():
     newweight_expected[0:10]=weights1
     newweight_expected[-15:]=weights2
     
-    newdist, newrange, newweights=joinDistributions(dist1, dist2, range1, range2, weights1, weights2 )
+    newdist,  newweights=joinScaleDistributions(dist1, dist2, range1, range2, weights1, weights2 )
     
     np.testing.assert_almost_equal(newdist_expected,newdist)
-    np.testing.assert_equal(newrange_expected,newrange)
+    #np.testing.assert_equal(newrange_expected,newrange)
     np.testing.assert_equal(newweight_expected,newweights)
 
    
@@ -97,12 +97,12 @@ def test_discontinuous_patch_merge_simple():
     s_dist2=np.arange(s_range2[1]-s_range2[0]+1)*0.1
     t_dist2=np.arange(t_range2[1]-t_range2[0]+1)*0.1
 
-    p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1) )
+    p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1),samplerate=44100,chunknumber=42)
     p1.set_inFrameCount(t_weights1)
     p1.set_inScaleCount(s_weights1)
     print('Patch 1: {0}'.format(p1))
     
-    p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) )
+    p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) ,samplerate=44100,chunknumber=42)
     p2.set_inFrameCount(t_weights2)
     p2.set_inScaleCount(s_weights2)
     print('Patch 2: {0}'.format(p2))
@@ -144,14 +144,14 @@ def test_discontinuous_patch_merge_distribution():
     s_dist2=np.arange(s_range2[1]-s_range2[0]+1)*0.1
     t_dist2=np.arange(t_range2[1]-t_range2[0]+1)*0.1
 
-    p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1) )
+    p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1),samplerate=44100,chunknumber=42)
     p1.set_inFrameCount(t_weights1)
     p1.set_inScaleCount(s_weights1)
     p1.set_inFrameDistribution('dist',t_dist1)
     p1.set_inScaleDistribution('dist',s_dist1)
     print('Patch 1: {0}'.format(p1))
     
-    p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) )
+    p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) ,samplerate=44100,chunknumber=42)
     p2.set_inFrameCount(t_weights2)
     p2.set_inScaleCount(s_weights2)
     p2.set_inFrameDistribution('dist',t_dist2)

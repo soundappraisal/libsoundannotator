@@ -51,8 +51,9 @@ class textureQuantizer(Quantizer):
 
 class Patch(object):
     
-    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=None, typelabel=None, serial_number=0, samplerate=0, **kwargs):
+    def __init__(self,level,t_low, t_high, s_low, s_high, size, t_offset=None, typelabel=None, serial_number=0, samplerate=0, chunknumber=None, **kwargs):
         self.identifier=uuid.uuid1()
+        self.chunknumber=chunknumber
         self.typelabel=typelabel
         self.level=level
         self.s_shape=(s_high-s_low+1,)
@@ -61,10 +62,14 @@ class Patch(object):
         if not t_offset == None:
             assert(samplerate > 0)
             self.samplerate=float(samplerate)
-            self.t_range=np.array([t_low/self.samplerate+t_offset,t_high/self.samplerate+t_offset])
+            self.t_range_seconds=np.array([t_low/self.samplerate+t_offset,t_high/self.samplerate+t_offset])
         else:
-            self.t_range=np.array([t_low,t_high])
+            assert(samplerate > 0)
+            self.samplerate=float(samplerate)
+            self.t_range_seconds=np.array([t_low/self.samplerate,t_high/self.samplerate])
             
+        self.framerange=((chunknumber,t_low),(chunknumber,t_high))
+        print('framerange in init: {0}'.format(self.framerange))
         self.size=size
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
@@ -111,10 +116,15 @@ class Patch(object):
                                     np.max([other_.s_range[1],self_.s_range[1]])]    )
         self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
         assert self.s_range[1]>=self.s_range[0], '{0}'.format(self)
-        self.t_range=np.array(  [   np.min([other_.t_range[0],self_.t_range[0]]),
-                                    np.max([other_.t_range[1],self_.t_range[1]])]    )
+        self.t_range_seconds=np.array(  [   np.min([other_.t_range_seconds[0],self_.t_range_seconds[0]]),
+                                    np.max([other_.t_range_seconds[1],self_.t_range_seconds[1]])]    )
+        
+        self.framerange=(   min(other_.framerange[0],self_.framerange[0]),
+                            max(other_.framerange[1],self_.framerange[1])  )
+                             
         self.t_shape=(other_.t_shape[0]+self_.t_shape[0],)
-        assert self.t_range[1]>=self.t_range[0], '{0}'.format(self)
+        
+        assert self.t_range_seconds[1]>=self.t_range_seconds[0], '{0}'.format(self)
         self.size=other_.size+self_.size
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
@@ -125,7 +135,7 @@ class Patch(object):
         scalemerge=False
         framemerge=False
         for ts_rep in self.inScaleDistributions.keys():
-            self.inScaleDistributions[ts_rep],  s_range,  inScaleCount = joinDistributions(
+            self.inScaleDistributions[ts_rep],    inScaleCount = joinScaleDistributions(
                 self.inScaleDistributions[ts_rep], 
                 other.inScaleDistributions[ts_rep], 
                 self.s_range, 
@@ -136,11 +146,11 @@ class Patch(object):
             scalemerge=True
             
         for ts_rep in self.inFrameDistributions.keys():
-            self.inFrameDistributions[ts_rep],  t_range,  inFrameCount = joinDistributions(
+            self.inFrameDistributions[ts_rep], inFrameCount = joinFrameDistributions(
                 self.inFrameDistributions[ts_rep], 
                 other.inFrameDistributions[ts_rep], 
-                self.t_range, 
-                other.t_range, 
+                self.framerange, 
+                other.framerange, 
                 self.inFrameCount,
                 other.inFrameCount 
                )
@@ -148,12 +158,10 @@ class Patch(object):
                
          
                
-        if scalemerge:      
-            self.s_range=s_range  
+        if scalemerge:  
             self.inScaleCount=inScaleCount 
-            self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
-        else:
-            inScaleCount,  self.s_range,  self.inScaleCount = joinDistributions(
+        else: #No representations available so lets calculate the inScale count
+            inScaleCount,    self.inScaleCount = joinScaleDistributions(
                 self.inScaleCount, 
                 other.inScaleCount, 
                 self.s_range, 
@@ -162,22 +170,20 @@ class Patch(object):
                 other.inScaleCount 
                )     
         
-        if framemerge:    
-            self.t_range=t_range  
+        if framemerge:  
             self.inFrameCount=inFrameCount 
-            self.t_shape=(self.t_range[1]-self.t_range[0]+1,)
-        else:
-            inFrameCount,  self.t_range,  self.inFrameCount = joinDistributions(
+        else: #No representations available so lets calculate the inFrame count
+            inFrameCount, self.inFrameCount = joinFrameDistributions(
                 self.inFrameCount, 
                 other.inFrameCount, 
-                self.t_range, 
-                other.t_range, 
+                self.framerange, 
+                other.framerange, 
                 self.inFrameCount,
                 other.inFrameCount 
                )     
           
         
-        self.size+=other.size
+        self.merge_descriptors( other)
         
        
          
@@ -192,17 +198,18 @@ class Patch(object):
         
         returnstring+=("Patch descriptors:\n  uuid={0},"+
         " \n typelabel={1} \n level={2} \n s_shape={3} "+
-        " \n s_range={4} \n t_shape={5} \n t_range={6} "+
-        "\n size={7} \n serial_number={8} \n").format(
+        " \n s_range={4} \n t_shape={5} \n t_range_seconds={6} "+
+        "\n size={7} \n serial_number={8} \n framerange={9} \n").format(
         self.identifier,
         self.typelabel,
         self.level,
         self.s_shape,
         self.s_range,
         self.t_shape,
-        self.t_range,
+        self.t_range_seconds,
         self.size,
-        self.serial_number)
+        self.serial_number,
+        self.framerange,)
         
         '''
         for ts_rep in self.inScaleDistributions.keys():
@@ -212,10 +219,10 @@ class Patch(object):
             returnstring+='\n tsrep: {0}, value: {1}'.format(ts_rep,self.inFrameDistributions[ts_rep] )'''
         return  returnstring
    
-def joinDistributions( dist1, dist2, range1, range2, weights1, weights2 ):
+def joinScaleDistributions( dist1, dist2, range1, range2, weights1, weights2 ):
     newrange=np.array([np.min([range1[0],range2[0]]),np.max([range1[1],range2[1]])]);
-    newdist=np.zeros([newrange[1]-newrange[0]+1]);
-    newweights=np.zeros([newrange[1]-newrange[0]+1],'int32');
+    newdist=np.zeros([newrange[1]-newrange[0]+1])
+    newweights=np.zeros([newrange[1]-newrange[0]+1],'int32')
     len1=weights1.shape[0]
     pos1=range1[0]-newrange[0]
     newweights[pos1:pos1+len1]+=weights1
@@ -232,9 +239,89 @@ def joinDistributions( dist1, dist2, range1, range2, weights1, weights2 ):
     # a gap arises and hence zero valued weights.
     newdist[newweights!=0]=newdist[newweights!=0]/newweights[newweights!=0]
     
-    return newdist, newrange, newweights
+    return newdist, newweights
 
-         
+def joinFrameDistributions( dist1, dist2, 
+                            framerange1, framerange2, 
+                            weights1, weights2, 
+                            ):
+    
+    if framerange1[0] < framerange2[0]:
+        firstindex =0
+    else:
+        firstindex=1
+
+    if framerange1[1] > framerange2[1]:
+        lastindex=0
+    else:
+        lastindex=1
+    
+    print('firstindex: {0}, lastindex: {1} '.format( firstindex , lastindex ))
+    framerange_list=[framerange1,framerange2]
+    dist_list=[dist1,dist2]
+    weights_list=[weights1,weights2]
+    length_list=[weights1.shape[0],weights2.shape[0]]
+    
+    if framerange1[0][0] == framerange2[0][0]:                     # both Patches start in the same chunk
+        offset=framerange_list[1-firstindex][0][1]-framerange_list[firstindex][0][1]    # Calculate amount the second is shifted compared to first
+                
+        newlength=offset+length_list[1-firstindex]
+        newdist=np.zeros([newlength])
+        newweights=np.zeros([newlength],'int32')
+        
+        newweights[0:length_list[firstindex]]+=weights_list[firstindex]
+        newdist[0:length_list[firstindex]]+=dist_list[firstindex]*weights_list[firstindex]
+        
+        newweights[offset:]+=weights_list[1-firstindex]
+        newdist[offset:]+=dist_list[1-firstindex]*weights_list[1-firstindex]
+    elif framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
+        offset=framerange_list[lastindex][0][1]-framerange_list[1-lastindex][0][1]    # Calculate amount the second is shifted compared to first
+                
+        newlength=offset+length_list[1-lastindex]
+        newdist=np.zeros([newlength])
+        newweights=np.zeros([newlength],'int32')
+        
+        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
+        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
+        
+        newweights[offset:]+=weights_list[lastindex]
+        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
+    elif framerange1[1][0]+1 == framerange2[1][0]:       #  Patches end in consecutive chunks
+        offset=framerange2[1][1]    # Calculate amount the second is shifted compared to first
+        lastindex=1
+                
+        newlength=offset+length_list[1-lastindex]
+        newdist=np.zeros([newlength])
+        newweights=np.zeros([newlength],'int32')
+        
+        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
+        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
+        
+        newweights[offset:]+=weights_list[lastindex]
+        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
+    elif framerange1[1][0] == framerange2[1][0]+1:       #  Patches end in consecutive chunks
+        offset=framerange1[1][1]    # Calculate amount the second is shifted compared to first
+        lastindex=0
+                
+        newlength=offset+length_list[1-lastindex]
+        newdist=np.zeros([newlength])
+        newweights=np.zeros([newlength],'int32')
+        
+        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
+        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
+        
+        newweights[offset:]+=weights_list[lastindex]
+        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
+    else:
+        raise Exception('Unanticipated merge scenario!')
+    # Joining distributions can involve more than 2 patches
+    # in which case the current algorithm cannot assure the 
+    # patches are direct neighbours, in which case it is possible 
+    # a gap arises and hence zero valued weights.
+    newdist[newweights!=0]=newdist[newweights!=0]/newweights[newweights!=0]
+    
+    return newdist, newweights
+
 class patchProcessorCore(object):
     
     def __init__(self,*args, **kwargs):
@@ -271,7 +358,7 @@ class patchProcessorCore(object):
         if not chunk.data.shape[1]==0:
             result=dict()
             self.logger.info('patchProcessorCore processData of chunk {0} with shape {1}'.format(chunk.number,chunk.data.shape))
-            self.newpatches(chunk.data, chunk.initialSampleTime)
+            self.newpatches(chunk.data, chunk.initialSampleTime, chunk.number)
             if(chunk.continuity>=Continuity.withprevious) and self.mergeprepared == chunk.number:
                 self.joinpatches()
                 
@@ -300,7 +387,7 @@ class patchProcessorCore(object):
         
         return result
 
-    def newpatches(self,data,initialSampleTime):
+    def newpatches(self,data,initialSampleTime,chunknumber):
             '''
             newpatches(self,data):
                 Create new patches from data making use of the levels generated by the quantizer.
@@ -328,8 +415,9 @@ class patchProcessorCore(object):
                                 t_offset=initialSampleTime,
                                 serial_number=patchNo+self.cumulativePatchCount,
                                 samplerate=self.samplerate,
-                                typelabel=self.typelabel)
-                
+                                typelabel=self.typelabel,
+                                chunknumber=chunknumber)
+                                
                 # Get and set in row count of timescale pixels
                 inScaleCount=np.zeros(newPatch.s_shape,'int32')
                 self.extractor.cpp_getInRowCount(int(patchNo),inScaleCount)
