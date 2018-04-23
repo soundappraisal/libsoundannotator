@@ -69,7 +69,7 @@ class Patch(object):
             self.t_range_seconds=np.array([t_low/self.samplerate,t_high/self.samplerate])
             
         self.framerange=((chunknumber,t_low),(chunknumber,t_high))
-        print('framerange in init: {0}'.format(self.framerange))
+        #print('framerange in init: {0}'.format(self.framerange))
         self.size=size
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
@@ -128,6 +128,10 @@ class Patch(object):
         self.size=other_.size+self_.size
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
+        
+        
+        #print('level: {0} and framerange: {1} in MERGE'.format(self.level,self.framerange))
+        
         
         return self
         

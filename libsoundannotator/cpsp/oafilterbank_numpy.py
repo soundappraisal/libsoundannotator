@@ -129,7 +129,13 @@ class OAFilterbank(processor.Processor):
             stopReadingBefore = min(startReadingAt+self.nBlock, len(signal))
 
             currentBlockLength = stopReadingBefore-startReadingAt
-
+               
+            self.logger.info('currentBlockLength: {0}, nfft: {1}, overlap: {2}, padding: {3}, fs: {4}'.format(currentBlockLength, 
+                                                                                    self.nfft, 
+                                                                                    self.nOverlap,
+                                                                                    self.nfft-self.nOverlap-currentBlockLength,
+                                                                                    self.fs))
+            
             # Read new samples and bring them to Z-domain
             x = np.array(signal[startReadingAt:stopReadingBefore], dtype=self.config['DataType'])
             X = fft.fft(x,self.nfft)
@@ -186,6 +192,12 @@ class OAFilterbank(processor.Processor):
             stopReadingBefore = min(startReadingAt+self.nBlock, len(signal))
 
             currentBlockLength = stopReadingBefore-startReadingAt
+              
+            self.logger.info('currentBlockLength: {0}, nfft: {1}, overlap: {2}, padding: {3}, fs: {4}'.format(currentBlockLength, 
+                                                                                    self.nfft, 
+                                                                                    self.nOverlap,
+                                                                                    self.nfft-self.nOverlap-currentBlockLength,
+                                                                                    self.fs))
             
             # Read new samples and bring them to Z-domain
             x = np.array(signal[startReadingAt:stopReadingBefore], dtype=self.config['DataType'])

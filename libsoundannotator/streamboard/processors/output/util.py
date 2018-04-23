@@ -23,7 +23,7 @@ from hashlib import sha1
 
 def getLocation(metadata, config):
     if 'usesource_id' in config.keys() and config['usesource_id'] is True:
-        sourcedata=loads(metadata[config['source_processor']][1])
+        sourcedata=loads(metadata[config['source_processor']][2])
         location=os.path.basename(sourcedata['source_id'])
     elif 'location' in config.keys():
         location=config['location'].replace(' ', '_')

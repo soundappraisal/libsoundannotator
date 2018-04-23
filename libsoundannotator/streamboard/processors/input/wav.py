@@ -175,15 +175,17 @@ class WavProcessor(processor.InputProcessor):
 
 
     def getMetaData(self):
-        self.config_serializable=self.config.copy()
-        del self.config_serializable['SoundFiles']
+        config_serializable=self.config.copy()
+        del config_serializable['SoundFiles']
+        annotation=dict()
         
         if not self.source is None:
-            self.config_serializable['source_id']=self.source['source_id']
-            self.config_serializable['duration']=self.source['duration']
+            annotation['source_id']=self.source['source_id']
+            annotation['duration']=self.source['duration']
             if 'annotation' in self.source.keys():
-                self.config_serializable['annotation']=self.source['annotation']
+                annotation['annotation']=self.source['annotation']
         
-        config_json=dumps(self.config_serializable, sort_keys=True)
+        config_json=dumps(config_serializable, sort_keys=True)
         config_hash=sha1(config_json).hexdigest()
-        return  {self.name: (config_hash, config_json)}
+        annotation_json=dumps(annotation, sort_keys=True)
+        return  {self.name: (config_hash, config_json, annotation_json)}
