@@ -44,8 +44,9 @@ class WavProcessor(processor.InputProcessor):
         self.AddWhiteNoise = self.config['AddWhiteNoise']
         self.newFileContinuity=self.config['newFileContinuity']
         self.startLatency = self.config['startLatency']
-        self.source=None
-    
+        self.source = None
+        self.reader = None
+        
     def prerun(self):
         super(WavProcessor, self).prerun()
         self.setProcessorAlignments()
@@ -60,7 +61,12 @@ class WavProcessor(processor.InputProcessor):
         for soundfile in self.soundfiles:
             self.processSoundfile(soundfile)
 
-        self.publishlastchunk()
+        
+        if not self.reader is None:
+            self.publishlastchunk()
+        else:
+            raise Exception("Sound file reader not created, probably due to an empty sound file list or an unrecognized file format.")
+
 
     '''
         Special function defined for the wave reader. What this does is
