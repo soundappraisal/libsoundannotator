@@ -387,66 +387,70 @@ class compositeManager(object):
         for key, current_chunk in current_composite.received.viewitems():
             
             if current_chunk.alignment.isAlignable():
-                current_data=current_chunk.data
-                current_data_shape=np.shape(current_data)
-                dimension=len(current_data_shape)
-                current_data_length=current_data_shape[-1]
+                if not current_chunk.alignment.isEventLike():
+                    current_data=current_chunk.data
+                    current_data_shape=np.shape(current_data)
+                    dimension=len(current_data_shape)
+                    current_data_length=current_data_shape[-1]
 
-                lowindices_drop = self.alignment_in.droppedAfterDiscontinuity-current_chunk.alignment.droppedAfterDiscontinuity 
-                highindices_drop= self.alignment_in.includedPast-current_chunk.alignment.includedPast
-                chunkdiscontinuity_lowindicesdrop=self.alignment_in.droppedAfterDiscontinuity+current_chunk.alignment.includedPast
-                
-                
-                self.processor.logger.info("Keys in arriving chunk {0}".format(key))
-                self.processor.logger.info("          lowindices_drop {0}".format(lowindices_drop))
-                self.processor.logger.info("          highindices_drop {0}".format(highindices_drop))
-                self.processor.logger.info("          chunkdiscontinuity_lowindicesdrop {0}".format(chunkdiscontinuity_lowindicesdrop))
-                self.processor.logger.info("          dimension {0}".format(dimension))
-                
-                
-                if dimension == 1:
-                    if continuity >= Continuity.withprevious:                   # Regular Continuous Case
-                        previous_data=previous_composite.received[key].data
-                        previous_data_shape=np.shape(previous_data)
-                        previous_data_length=previous_data_shape[-1]
-                        
-                        newdata=np.concatenate((previous_data[previous_data_length-highindices_drop:],current_data[:current_data_length-highindices_drop]))
-                    elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
-                        newdata=current_data[chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this chunk been discontinuous and the part shaved of if it had been discontinuous.
-                    else:                                                       # Regular Discontinuous Case
-                        newdata=current_data[lowindices_drop:current_data_length-highindices_drop]
-                elif dimension == 2:
-                    if continuity >= Continuity.withprevious:                   # Regular Continuous Case
-                        previous_data=previous_composite.received[key].data
-                        previous_data_shape=np.shape(previous_data)
-                        previous_data_length=previous_data_shape[-1]
-                        newdata=np.concatenate((previous_data[:,previous_data_length-highindices_drop:],current_data[:,:current_data_length-highindices_drop]), axis=1)
-                    elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
-                        newdata=current_data[:,chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this stream been discontinuous and the part shaved of it it had been discontinuous.
-                    else:                                                       # Regular Discontinuous Case
-                        newdata=current_data[:,lowindices_drop:current_data_length-highindices_drop]
+                    lowindices_drop = self.alignment_in.droppedAfterDiscontinuity-current_chunk.alignment.droppedAfterDiscontinuity 
+                    highindices_drop= self.alignment_in.includedPast-current_chunk.alignment.includedPast
+                    chunkdiscontinuity_lowindicesdrop=self.alignment_in.droppedAfterDiscontinuity+current_chunk.alignment.includedPast
+                    
+                    
+                    self.processor.logger.info("Keys in arriving chunk {0}".format(key))
+                    self.processor.logger.info("          lowindices_drop {0}".format(lowindices_drop))
+                    self.processor.logger.info("          highindices_drop {0}".format(highindices_drop))
+                    self.processor.logger.info("          chunkdiscontinuity_lowindicesdrop {0}".format(chunkdiscontinuity_lowindicesdrop))
+                    self.processor.logger.info("          dimension {0}".format(dimension))
+                    
+                    
+                    if dimension == 1:
+                        if continuity >= Continuity.withprevious:                   # Regular Continuous Case
+                            previous_data=previous_composite.received[key].data
+                            previous_data_shape=np.shape(previous_data)
+                            previous_data_length=previous_data_shape[-1]
+                            
+                            newdata=np.concatenate((previous_data[previous_data_length-highindices_drop:],current_data[:current_data_length-highindices_drop]))
+                        elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
+                            newdata=current_data[chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this chunk been discontinuous and the part shaved of if it had been discontinuous.
+                        else:                                                       # Regular Discontinuous Case
+                            newdata=current_data[lowindices_drop:current_data_length-highindices_drop]
+                    elif dimension == 2:
+                        if continuity >= Continuity.withprevious:                   # Regular Continuous Case
+                            previous_data=previous_composite.received[key].data
+                            previous_data_shape=np.shape(previous_data)
+                            previous_data_length=previous_data_shape[-1]
+                            newdata=np.concatenate((previous_data[:,previous_data_length-highindices_drop:],current_data[:,:current_data_length-highindices_drop]), axis=1)
+                        elif current_chunk.continuity >= Continuity.withprevious:   # Irregular Discontinuous Case
+                            newdata=current_data[:,chunkdiscontinuity_lowindicesdrop:current_data_length-highindices_drop]  # shave off the part  not present had this stream been discontinuous and the part shaved of it it had been discontinuous.
+                        else:                                                       # Regular Discontinuous Case
+                            newdata=current_data[:,lowindices_drop:current_data_length-highindices_drop]
+                    else:
+                        raise ValueError('compositeManager does not support numpy arrays of dimensions higher than 2')
+                    
+                    newChunk=DataChunk( newdata, 
+                                        starttime, 
+                                        current_chunk.fs, 
+                                        current_chunk.processorname, 
+                                        self.sources, 
+                                        continuity, 
+                                        current_chunk.number, 
+                                        alignment=self.alignment_in,
+                                        #dataGenerationTime=current_chunk.dataGenerationTime,
+                                        #metadata=current_chunk.metadata, 
+                                        #identifier=current_chunk.identifier,                                     
+                                        dataGenerationTime=dataGenerationTime,
+                                        metadata=metadata, 
+                                        identifier=identifier,
+                                        initialSampleTime=initialSampleTime,
+                                       )
+                    
+                    to_processor_composite.update(key,newChunk)
                 else:
-                    raise ValueError('compositeManager does not support numpy arrays of dimensions higher than 2')
+                    to_processor_composite.update(key,current_chunk)
                 
-                newChunk=DataChunk( newdata, 
-                                    starttime, 
-                                    current_chunk.fs, 
-                                    current_chunk.processorname, 
-                                    self.sources, 
-                                    continuity, 
-                                    current_chunk.number, 
-                                    alignment=self.alignment_in,
-                                    #dataGenerationTime=current_chunk.dataGenerationTime,
-                                    #metadata=current_chunk.metadata, 
-                                    #identifier=current_chunk.identifier,                                     
-                                    dataGenerationTime=dataGenerationTime,
-                                    metadata=metadata, 
-                                    identifier=identifier,
-                                    initialSampleTime=initialSampleTime,
-                                   )
                 
-                to_processor_composite.update(key,newChunk)
-        
         # Needed for passing testing, but largely obsolete for our current purposes.
         to_processor_composite.continuity=continuity
         to_processor_composite.alignment=self.alignment_in

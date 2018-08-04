@@ -17,6 +17,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
+
 class ContinuityMeta(type):
     
    
@@ -63,17 +65,25 @@ class chunkAlignment(object):
     """
         Class to keep track of alignment of chunk with respect to the original signal
     """
-    def __init__(self, includedPast=0 , droppedAfterDiscontinuity=0 , invalidLargeScales=0 , invalidSmallScales=0, alignable=True, fsampling=None):
+    def __init__(self   , includedPast=0 , droppedAfterDiscontinuity=0 
+                        , invalidLargeScales=0 , invalidSmallScales=0
+                        , alignable=True, fsampling=None
+                        ,eventlike=False):
         
-        self.set(includedPast, droppedAfterDiscontinuity, invalidLargeScales, invalidSmallScales, alignable,fsampling)
+        self.set(includedPast, droppedAfterDiscontinuity, invalidLargeScales
+                            , invalidSmallScales, alignable
+                            , fsampling,eventlike)
         
-    def set(self, includedPast, droppedAfterDiscontinuity, invalidLargeScales, invalidSmallScales, alignable,fsampling):
+    def set(self, includedPast, droppedAfterDiscontinuity, 
+                    invalidLargeScales, invalidSmallScales, 
+                    alignable,fsampling,eventlike):
         self.includedPast=includedPast
         self.droppedAfterDiscontinuity=droppedAfterDiscontinuity
         self.invalidLargeScales=invalidLargeScales
         self.invalidSmallScales=invalidSmallScales
         self.alignable=alignable
         self.fsampling=fsampling
+        self.eventlike=eventlike
     
     def copy(self):
         return chunkAlignment(
@@ -83,13 +93,15 @@ class chunkAlignment(object):
             self.invalidSmallScales,
             self.alignable,
             self.fsampling,
+            self.eventlike,
+            
         )
         
 
     def merge(self,other):
         
-        if not (self.alignable and other.alignable):
-            raise ValueError('chunkAlignment objects can not be aligned because at least on chunk is not alignable') 
+        if not (self.alignable == other.alignable):
+            raise ValueError('chunkAlignment objects can not be aligned because at least on chunk is not alignable and not eventlike') 
         
         if not (self.fsampling == other.fsampling):
             raise ValueError('chunkAlignment objects can not be aligned because of incompatible sampling frequencies') 
@@ -100,12 +112,14 @@ class chunkAlignment(object):
         invalidLargeScales=max(self.invalidLargeScales,other.invalidLargeScales)
         invalidSmallScales=max(self.invalidSmallScales,other.invalidSmallScales)
         fsampling=self.fsampling
+        eventlike=self.eventlike
         
         return chunkAlignment(  includedPast=includedPast,
                                 droppedAfterDiscontinuity=droppedAfterDiscontinuity,
                                 invalidLargeScales=invalidLargeScales,
                                 invalidSmallScales=invalidSmallScales,
                                 fsampling=fsampling,
+                                eventlike=eventlike,
                                 )
 
     
@@ -128,17 +142,22 @@ class chunkAlignment(object):
             invalidLargeScales=self.invalidLargeScales+processor_alignment.invalidLargeScales
             invalidSmallScales=self.invalidSmallScales+processor_alignment.invalidSmallScales
             fsampling=processor_alignment.fsampling
+            eventlike=processor_alignment.eventlike
                 
             return chunkAlignment(  includedPast=includedPast,
                                     droppedAfterDiscontinuity=droppedAfterDiscontinuity,
                                     invalidLargeScales=invalidLargeScales,
                                     invalidSmallScales=invalidSmallScales,
-                                    fsampling=fsampling)
+                                    fsampling=fsampling,
+                                    eventlike=eventlike,)
         else:
             raise TypeError('Trying to impose non processorAlignment. Probably you want merge to chunkAlignment objects. ')
     
     def isAlignable(self):
         return self.alignable
+    
+    def isEventLike(self):
+        return self.eventlike
         
     def __eq__(self, other):
         
@@ -163,7 +182,16 @@ class chunkAlignment(object):
         self.invalidLargeScales,self.invalidSmallScales,
         self.alignable, self.fsampling, type(self))
     
-
+    def to_dict(self):
+        return {'includedPast': self.includedPast, 
+                'droppedAfterDiscontinuity': self.droppedAfterDiscontinuity,
+                'invalidLargeScales': self.invalidLargeScales,
+                'invalidSmallScales': self.invalidSmallScales,
+                'alignable': self.alignable,
+                'fsampling': self.fsampling,
+                'eventlike': self.eventlike }
+              
+              
 class processorAlignment(chunkAlignment):
     
     def copy(self):
@@ -174,4 +202,5 @@ class processorAlignment(chunkAlignment):
             self.invalidSmallScales,
             self.alignable,
             self.fsampling,
+            self.eventlike,
         )

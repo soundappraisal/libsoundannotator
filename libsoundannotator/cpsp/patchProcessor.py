@@ -558,7 +558,7 @@ class patchProcessor(Processor):
         self.processorAlignments=dict()
         
         for featureName in self.featurenames: 
-            self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName))
+            self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName),eventlike=True)
 
 
     def getMetaData(self):
