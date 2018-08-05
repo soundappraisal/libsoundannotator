@@ -387,7 +387,10 @@ class compositeManager(object):
         for key, current_chunk in current_composite.received.viewitems():
             
             if current_chunk.alignment.isAlignable():
-                if not current_chunk.alignment.isEventLike():
+                if current_chunk.alignment.isEventLike():
+                    #self.processor.logger.info("Eventlike chunk with key: {}".format(key))
+                    to_processor_composite.update(key,current_chunk)
+                else:
                     current_data=current_chunk.data
                     current_data_shape=np.shape(current_data)
                     dimension=len(current_data_shape)
@@ -447,8 +450,6 @@ class compositeManager(object):
                                        )
                     
                     to_processor_composite.update(key,newChunk)
-                else:
-                    to_processor_composite.update(key,current_chunk)
                 
                 
         # Needed for passing testing, but largely obsolete for our current purposes.

@@ -520,6 +520,7 @@ class patchProcessor(Processor):
     requiredKeys=['TSRep']
     
     featurenames=['matrix','patches','levels']
+    eventLikeFeature=dict(zip(featurenames,[False,True,False]))
     
     def __init__(self,boardConn, name,*args, **kwargs):
         super(patchProcessor, self).__init__(boardConn, name,*args, **kwargs)
@@ -558,7 +559,7 @@ class patchProcessor(Processor):
         self.processorAlignments=dict()
         
         for featureName in self.featurenames: 
-            self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName),eventlike=True)
+            self.processorAlignments[featureName]=processorAlignment(fsampling=self.getsamplerate(featureName),eventlike=self.eventLikeFeature[featureName])
 
 
     def getMetaData(self):

@@ -100,8 +100,8 @@ class chunkAlignment(object):
 
     def merge(self,other):
         
-        if not (self.alignable == other.alignable):
-            raise ValueError('chunkAlignment objects can not be aligned because at least on chunk is not alignable and not eventlike') 
+        if not (self.alignable and other.alignable):
+            raise ValueError('chunkAlignment objects can not be aligned because at least on chunk is not alignable') 
         
         if not (self.fsampling == other.fsampling):
             raise ValueError('chunkAlignment objects can not be aligned because of incompatible sampling frequencies') 
@@ -169,7 +169,8 @@ class chunkAlignment(object):
                 self.droppedAfterDiscontinuity==other.droppedAfterDiscontinuity and
                 self.invalidLargeScales==other.invalidLargeScales and
                 self.invalidSmallScales==other.invalidSmallScales and
-                self.alignable==other.alignable 
+                self.alignable==other.alignable and
+                self.eventlike==other.eventlike 
             ):
                 ret =  True
             else:
