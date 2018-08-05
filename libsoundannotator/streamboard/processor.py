@@ -321,6 +321,9 @@ class InputProcessor(BaseProcessor):
                 dataout = None
             else:
                 dataout=data[subscriber.senderKey]
+                if type(dataout) is np.ndarray:
+                    if dataout.shape[-1] == 0:
+                        raise ValueError("Empty 2d array produced. Please consider removing processor {} sending {} or increasing chunk size!".format(self.name,subscriber.senderKey))
 
             chunk = DataChunk(dataout,
                 starttime,
