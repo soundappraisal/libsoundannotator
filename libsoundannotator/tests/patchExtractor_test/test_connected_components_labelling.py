@@ -408,3 +408,51 @@ def test_join_horizontal_stripes():
     validpatches=p.cpp_calcJoinMatrix(tex_before, tex_after, patch_before, patch_after, joinMatrix )
     #print('joinMatrix:{0}, validpatches:{1}'.format(joinMatrix[0:validpatches,:],validpatches))
     np.testing.assert_equal(joinMatrixExpected,joinMatrix)
+
+
+
+@with_setup(setup_each())
+def test_nonmonotonic_join_scenario():
+    joinMatrixExpected= np.array([[1,1],[2,2],[3,2],[4,1],[8,1],[9,2],[10,1],[11,2],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],])
+
+
+    p=patchExtractor.patchExtractor()
+    tex_before=np.zeros([7],'int32')
+    tex_before[:]=[0,1,0,1,0,1,0]
+    tex_after=np.zeros([7],'int32')
+    tex_after[:]=[0,1,0,1,0,1,0]
+    patch_before=np.zeros([7],'int32')
+    patch_before[:]=[1,2,1,3,4,3,1]
+    patch_after=np.zeros([7],'int32')
+    patch_after[:]=[8,9,10,11,10,9,8]
+    joinMatrix=np.zeros([14,2],'int32')
+    
+    #print('{0}, {1}'.format(patch_before,patch_after))
+    validpatches=p.cpp_calcJoinMatrix(tex_before, tex_after, patch_before, patch_after, joinMatrix )
+    print('joinMatrix:{0}, validpatches:{1}'.format(joinMatrix[0:validpatches,:],validpatches))
+    np.testing.assert_equal(joinMatrixExpected,joinMatrix)
+    
+    
+
+
+@with_setup(setup_each())
+def test_nonmonotonic_join_scenario_2():
+    joinMatrixExpected= np.array([[1,1],[2,2],[3,1],[4,2],[11,1],[12,2],[13,1],[14,2],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],])
+
+
+    p=patchExtractor.patchExtractor()
+    patches=np.zeros(np.shape(horizontal_stripes),'int32')
+    tex_before=np.zeros([7],'int32')
+    tex_before[:]=[0,1,0,1,0,1,0]
+    tex_after=np.zeros([7],'int32')
+    tex_after[:]=[0,1,0,1,0,1,0]
+    patch_before=np.zeros([7],'int32')
+    patch_before[:]=[1,2,3,2,1,4,1]
+    patch_after=np.zeros([7],'int32')
+    patch_after[:]=[11,12,13,14,13,12,11]
+    joinMatrix=np.zeros([14,2],'int32')
+    
+    #print('{0}, {1}'.format(patch_before,patch_after))
+    validpatches=p.cpp_calcJoinMatrix(tex_before, tex_after, patch_before, patch_after, joinMatrix )
+    print('joinMatrix:{0}, validpatches:{1}'.format(joinMatrix[0:validpatches,:],validpatches))
+    np.testing.assert_equal(joinMatrixExpected,joinMatrix)

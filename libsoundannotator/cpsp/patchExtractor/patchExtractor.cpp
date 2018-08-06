@@ -525,35 +525,49 @@ int patchExtractor::calcJoinMatrix(int noRows, int * texturesBefore, int * textu
 // be lower than after.
 void patchExtractor::JoinLink (int lowPatch, int highPatch, int validPatchCount,int *joinMatrix) {
     int i,j;
+    int highPatchReplacementValue,lowPatchReplacementValue;
 
-    // Find entries in join matrix to which we need to apply the link.
+
     for(i=0;i<validPatchCount;i++){
         if(highPatch==joinMatrix[2*i]){ 
             // We found the high patch. 
-            
-            if(lowPatch > joinMatrix[2*i+1]){
-                // If the lowpatch happens to be 
-                // higher than the replacement value of the high patch, i.e. the 
-                // high patch appeared in an earlier link, we set the replacement 
-                // value of the low patch to the replacement value of the high patch.
-                for(j=0;j<validPatchCount;j++){
-                    if(lowPatch==joinMatrix[2*j]){
-                        joinMatrix[2*j+1]=joinMatrix[2*i+1];
-                        j=validPatchCount; 
-                    }
-                }
-            }else{
-                // If the low patch happens to be lower than the 
-                // replacement value of the high patch we set all occurences of 
-                // the high patch replacement value to low patch.
-                for(j=0;j<validPatchCount;j++){
-                    if(joinMatrix[2*i+1]==joinMatrix[2*j+1]){
-                        joinMatrix[2*j+1]=lowPatch;
-                    }
-                }
-            }
-
+            highPatchReplacementValue=joinMatrix[2*i+1];
             i=validPatchCount;
-        }    
+        }
     }
+
+    for(j=0;j<validPatchCount;j++){
+        if(joinMatrix[2*j]==lowPatch){
+            lowPatchReplacementValue=joinMatrix[2*j+1];
+            j=validPatchCount;
+        }
+    }
+                
+    // Find entries in join matrix to which we need to apply the link.
+    
+            
+    if(lowPatchReplacementValue > highPatchReplacementValue){
+        // If the lowpatch happens to be 
+        // higher than the replacement value of the high patch, i.e. the 
+        // high patch appeared in an earlier link, we set the replacement 
+        // value of the low patch to the replacement value of the high patch.
+        for(j=0;j<validPatchCount;j++){
+            if(lowPatch==joinMatrix[2*j]  || lowPatch==joinMatrix[2*j+1]){
+                joinMatrix[2*j+1]=highPatchReplacementValue;
+            }
+        }
+    }else if (lowPatchReplacementValue < highPatchReplacementValue){
+        // If the low patch happens to be lower than the 
+        // replacement value of the high patch we set all occurences of 
+        // the high patch replacement value to low patch.
+        // In addition we need to give the original replacement value a new replacement value
+        // .. as we have now established a link between the lowPatch value and the origianal replacement value.
+        
+        for(j=0;j<validPatchCount;j++){
+            if(highPatchReplacementValue==joinMatrix[2*j] || highPatchReplacementValue==joinMatrix[2*j+1]){
+                joinMatrix[2*j+1]=lowPatchReplacementValue;}
+        }
+    }
+
+          
 }
