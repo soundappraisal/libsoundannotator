@@ -69,6 +69,7 @@ class WavChunkReader(object):
             When the maximum amount of frames is read, the wavereader is closed,
             so the next call to this function will raise an exception
         '''
+        self.initialframepointer=self.framepointer
         if self.framepointer + N < self.nframes:
             frames = self.wavereader.readframes(N)
             self.framepointer += N
@@ -79,7 +80,8 @@ class WavChunkReader(object):
             #close the reader and remove it for safety
             self.closefile()
             del self.wavereader
-
+        
+        
         return np.fromstring(frames, dtype=self.dtype)
 
     def getNullChunk(self, N):
@@ -90,7 +92,7 @@ class WavChunkReader(object):
     def getFramepointer(self):
         return self.framepointer
     def getTime(self):
-        return float(self.framepointer) / float(self.fs)
+        return float(self.initialframepointer) / float(self.fs)
     def getDuration(self):
         return self.duration
     def getPercent(self):

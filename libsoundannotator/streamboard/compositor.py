@@ -461,11 +461,12 @@ class compositeManager(object):
             raise RuntimeError('compositeChunk misses required keys')
             pass
        
-        timeintervallengths=[np.shape(to_processor_composite.received[key].data)[-1]  for key in to_processor_composite.received]
-        
-        if not len(set(timeintervallengths)) == 1:
-            #raise RuntimeError('Chunks passed to processor should be of the same length')
-            pass
+        if not current_chunk.alignment.isEventLike():
+            timeintervallengths=[np.shape(to_processor_composite.received[key].data)[-1]  for key in to_processor_composite.received]
+            
+            if not len(set(timeintervallengths)) == 1:
+                #raise RuntimeError('Chunks passed to processor should be of the same length')
+                pass
 
 
         return to_processor_composite

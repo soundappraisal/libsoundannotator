@@ -381,7 +381,7 @@ def process_continuous_chunks(myQueue):
     r3=p.processData(not_a_composite_chunk3.received['TSRep'])
     r2=p.processData(not_a_composite_chunk2.received['TSRep'])
    
-    np.testing.assert_equal(r1['matrix'],np.array(
+    np.testing.assert_equal(r1['matrix'],1+np.array(
                                                 [   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
                                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
                                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
@@ -406,7 +406,7 @@ def process_continuous_chunks(myQueue):
                                                 , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
                                                 , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]]))
                                                     
-    np.testing.assert_equal(r2['matrix'],np.array(
+    np.testing.assert_equal(r2['matrix'],1+np.array(
                                                     [ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                                                     , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                                                     , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -441,7 +441,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(20,) 
     dummy['t_range_seconds']=[ 12. ,   12.19] 
     dummy['size']=140 
-    dummy['serial_number']=0 
+    dummy['serial_number']=1+0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -451,7 +451,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(10,) 
     dummy['t_range_seconds']=[ 12. ,   12.09] 
     dummy['size']=50 
-    dummy['serial_number']=1
+    dummy['serial_number']=1+1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -461,7 +461,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.18,  12.19] 
     dummy['size']=10 
-    dummy['serial_number']=2 
+    dummy['serial_number']=1+2 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
 
 
@@ -476,7 +476,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(40,) 
     dummy['t_range_seconds']=[ 12.0,   12.39] 
     dummy['size']=220 
-    dummy['serial_number']=0 
+    dummy['serial_number']=1+0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -486,7 +486,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(22,) 
     dummy['t_range_seconds']=[ 12.18,  12.39] 
     dummy['size']=120 
-    dummy['serial_number']=2 
+    dummy['serial_number']=1+2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -496,7 +496,7 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.38 , 12.39] 
     dummy['size']=10 
-    dummy['serial_number']=5 
+    dummy['serial_number']=1+5 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
 
     #print('{0}, {1}'.format(r1,r2))
@@ -588,7 +588,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     r3=p.processData(not_a_composite_chunk3.received['TSRep'])
     r2=p.processData(not_a_composite_chunk2.received['TSRep'])
    
-    np.testing.assert_equal(r1['matrix'],np.array(
+    np.testing.assert_equal(r1['matrix'],1+np.array(
                                                 [   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
                                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
                                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
@@ -613,7 +613,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
                                                 , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]
                                                 , [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2]]))
                                                     
-    np.testing.assert_equal(r2['matrix'],np.array(
+    np.testing.assert_equal(r2['matrix'],1+np.array(
                                                     [ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                                                     , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                                                     , [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -648,7 +648,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(20,) 
     dummy['t_range_seconds']=[ 12. ,   12.19] 
     dummy['size']=140 
-    dummy['serial_number']=0 
+    dummy['serial_number']=1+0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -658,7 +658,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(10,) 
     dummy['t_range_seconds']=[ 12. ,   12.09] 
     dummy['size']=50 
-    dummy['serial_number']=1
+    dummy['serial_number']=1+1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'} 
@@ -668,7 +668,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.18,  12.19] 
     dummy['size']=10 
-    dummy['serial_number']=2 
+    dummy['serial_number']=1+2 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
 
 
@@ -683,7 +683,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(40,) 
     dummy['t_range_seconds']=[ 12.0,   12.39] 
     dummy['size']=220 
-    dummy['serial_number']=0 
+    dummy['serial_number']=1+0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -693,7 +693,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(22,) 
     dummy['t_range_seconds']=[ 12.18,  12.39] 
     dummy['size']=120 
-    dummy['serial_number']=2 
+    dummy['serial_number']=1+2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
     dummy=dict()
     dummy['typelabel']={'quantizer': 'textureQuantizer', 'ts_rep': 'mock_tf'}
@@ -703,7 +703,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.38 , 12.39] 
     dummy['size']=10 
-    dummy['serial_number']=5 
+    dummy['serial_number']=1+5 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
 
     #print('{0}, {1}'.format(r1,r2))

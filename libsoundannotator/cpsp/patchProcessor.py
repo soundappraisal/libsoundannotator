@@ -340,7 +340,7 @@ class patchProcessorCore(object):
         self.tex_before=np.zeros([self.noofscales],'int32')
         self.patch_before=np.zeros([self.noofscales],'int32')
         self.joinMatrix=np.zeros([2*self.noofscales,2],'int32')
-        self.cumulativePatchCount=0
+        self.cumulativePatchCount=1 #reserve zero for non-patches
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
         self.newpatchlist=list()
@@ -370,6 +370,7 @@ class patchProcessorCore(object):
             result['patches']=self.newpatchlist
             result['levels']=self.levels
             
+            
             # Store information on current patches to make them available
             # in case of a merge with next chunk
             self.tex_before[:]= np.array(self.levels[:,-1]) 
@@ -378,12 +379,29 @@ class patchProcessorCore(object):
             self.cumulativePatchCount+=self.N
             self.mergeprepared = chunk.number+1
             self.logger.info('Processed chunk {}'.format(chunk.number))
+            
+            finalized_patch_list=list()
+            unfinalized_patch_list=list()
+            for patch in self.newpatchlist:
+                if patch.serial_number in self.patchMatrix[:,-1]:
+                    unfinalized_patch_list.append(patch)
+                else:
+                    finalized_patch_list.append(patch)
+                    
+            result['markedpatches']={   'finalized_patches':finalized_patch_list,
+                                        'unfinalized_patches':unfinalized_patch_list,
+                                        'join_matrix':np.array([[a,b] for a,b in self.joinMatrix if a>0])}
+            
+            
         else:
             if(chunk.continuity>=Continuity.withprevious):
                 result=dict()
                 result['matrix']=np.zeros(chunk.data.shape)
                 result['patches']=list()
                 result['levels']=np.zeros(chunk.data.shape)
+                result['markedpatches']={'finalized_patches':list(),
+                                'unfinalized_patches':list(),
+                                'join_matrix':np.zeros((0,2))}
                 self.logger.info('set merge prepaered flag to : {}'.format(chunk.number+1)) 
                 self.mergeprepared = chunk.number+1
             else:
@@ -519,8 +537,8 @@ class patchProcessorCore(object):
 class patchProcessor(Processor):
     requiredKeys=['TSRep']
     
-    featurenames=['matrix','patches','levels']
-    eventLikeFeature=dict(zip(featurenames,[False,True,False]))
+    featurenames=['matrix','patches','levels','markedpatches']
+    eventLikeFeature=dict(zip(featurenames,[False,True,False,True]))
     
     def __init__(self,boardConn, name,*args, **kwargs):
         super(patchProcessor, self).__init__(boardConn, name,*args, **kwargs)
