@@ -62,6 +62,7 @@ class patchExtractor {
         double ** InRowDist, **InColDist;
         bool inPatchMeansSet;
         void clearInPatchMeans();
+        bool isPatchInLinks(int patch, int lastvalidLink,int ** links);
         void JoinLink (int lowPatch, int highPatch, int lastvalidPatchNo,int *joinMatrix) ;
 };
 #endif

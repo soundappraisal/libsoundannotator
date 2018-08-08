@@ -99,7 +99,7 @@ Testing connected component labelling
 def test_join_bulk_connection1():
     p=patchExtractor.patchExtractor()
     joinMatrixExpected= np.array(
-        [[0,0],[1,1],[2,2],[3,3],[4,4]
+        [[0,0],[-1,-1],[-1,-1],[3,3],[4,4]
         ,[5,5],[6,0],[7,3],[8,0],[9,4]
         ,[10,5],[0,0],[0,0],[0,0],[0,0]
         ,[0,0],[0,0],[0,0],[0,0],[0,0],])
@@ -122,9 +122,9 @@ def test_join_bulk_connection1():
 def test_join_bulk_connection2():
     p=patchExtractor.patchExtractor()
     joinMatrixExpected= np.array(
-        [[0,0],[1,1],[2,2],[3,3],[4,0]
-        ,[5,5],[6,6],[10,0],[11,3],[13,5]
-        ,[14,14],[0,0],[0,0],[0,0],[0,0]
+        [[0,0],[-1,-1],[-1,-1],[3,3],[4,0]
+        ,[5,5],[-1,-1],[10,0],[11,3],[13,5]
+        ,[-1,-1],[0,0],[0,0],[0,0],[0,0]
         ,[0,0],[0,0],[0,0],[0,0],[0,0],])
         
     tex_before  =np.array([ 0, 0, 1, 2, 3, 0, 0, 2, 2, 0],'int32')
@@ -143,8 +143,8 @@ def test_join_bulk_connection2():
 def test_join_double_bulk_connection():
     p=patchExtractor.patchExtractor()
     joinMatrixExpected= np.array(
-        [[0,0],[1,1],[2,2],[3,3],[5,5]
-        ,[6,6],[10,0],[11,3],[13,5],[14,14]
+        [[0,0],[-1,-1],[-1,-1],[3,3],[5,5]
+        ,[-1,-1],[10,0],[11,3],[13,5],[-1,-1]
         ,[0,0],[0,0],[0,0],[0,0],[0,0]
         ,[0,0],[0,0],[0,0],[0,0],[0,0],])
         

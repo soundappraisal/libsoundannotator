@@ -501,8 +501,13 @@ int patchExtractor::calcJoinMatrix(int noRows, int * texturesBefore, int * textu
     
     // Copy patchnumbers existing at the seam to the join matrix
     for(i=0;i<validPatchCount;i++){
-        joinMatrix[2*i]=patchNoList[i];
-        joinMatrix[2*i+1]=patchNoList[i];
+        if (isPatchInLinks(patchNoList[i], lastvalidLink,links)){
+            joinMatrix[2*i]=patchNoList[i];
+            joinMatrix[2*i+1]=patchNoList[i];
+        }else{
+            joinMatrix[2*i]=-1;
+            joinMatrix[2*i+1]=-1;
+        }
     }
     
     
@@ -521,11 +526,32 @@ int patchExtractor::calcJoinMatrix(int noRows, int * texturesBefore, int * textu
     return validPatchCount;
 }
 
+
+// At the start of the join process patch numbers before the seam should 
+// be lower than after.
+bool patchExtractor::isPatchInLinks (int patch, int lastvalidLink,int ** links){
+    bool ispatchinlinks=false;
+    int i;
+    
+    // Use links to replace patchnumbers in join matrix 
+    for(i=0;i<=lastvalidLink;i++){
+       if(links[i][0]==patch ||links[i][1]==patch){
+           ispatchinlinks=true;
+           i=lastvalidLink;
+       }
+       
+    }
+    
+    
+    return ispatchinlinks;
+}
+
+
 // At the start of the join process patch numbers before the seam should 
 // be lower than after.
 void patchExtractor::JoinLink (int lowPatch, int highPatch, int validPatchCount,int *joinMatrix) {
     int i,j;
-    int highPatchReplacementValue,lowPatchReplacementValue;
+    int highPatchReplacementValue=0,lowPatchReplacementValue=0;
 
 
     for(i=0;i<validPatchCount;i++){
