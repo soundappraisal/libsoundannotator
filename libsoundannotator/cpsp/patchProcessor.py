@@ -59,17 +59,21 @@ class Patch(object):
         self.s_shape=(s_high-s_low+1,)
         self.s_range=np.array([s_low,s_high])
         self.t_shape=(t_high-t_low+1,)
+        
         if not t_offset == None:
             assert(samplerate > 0)
             self.samplerate=float(samplerate)
-            self.t_range_seconds=np.array([t_low/self.samplerate+t_offset,t_high/self.samplerate+t_offset])
+            self.t_range_seconds=np.array([t_low/self.samplerate+t_offset,t_high/self.samplerate+t_offset+1.0/self.samplerate])
         else:
             assert(samplerate > 0)
             self.samplerate=float(samplerate)
-            self.t_range_seconds=np.array([t_low/self.samplerate,t_high/self.samplerate])
+            self.t_range_seconds=np.array([t_low/self.samplerate,t_high/self.samplerate+1.0/self.samplerate])
+        
+        self.duration=self.t_range_seconds[1] -self.t_range_seconds[0] 
+        self.height=self.s_shape[0]
+        self.fillratio=size/(self.duration*self.height)
             
         self.framerange=((chunknumber,t_low),(chunknumber,t_high))
-        #print('framerange in init: {0}'.format(self.framerange))
         self.size=size
         self.inFrameDistributions=dict()
         self.inScaleDistributions=dict()
@@ -124,8 +128,14 @@ class Patch(object):
                              
         self.t_shape=(other_.t_shape[0]+self_.t_shape[0],)
         
-        assert self.t_range_seconds[1]>=self.t_range_seconds[0], '{0}'.format(self)
+        #assert self.t_range_seconds[1]>=self.t_range_seconds[0], '{0}'.format(self)
         self.size=other_.size+self_.size
+        
+        
+        self.duration=self.t_range_seconds[1] -self.t_range_seconds[0] 
+        self.height=self.s_shape[0]
+        self.fillratio=self.size/(self.duration*self.height)
+        
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
         

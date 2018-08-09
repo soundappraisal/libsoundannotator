@@ -439,7 +439,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0, 9] 
     dummy['t_shape']=(20,) 
-    dummy['t_range_seconds']=[ 12. ,   12.19] 
+    dummy['t_range_seconds']=[ 12. ,   12.20] 
     dummy['size']=140 
     dummy['serial_number']=1+0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -449,7 +449,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(10,) 
-    dummy['t_range_seconds']=[ 12. ,   12.09] 
+    dummy['t_range_seconds']=[ 12. ,   12.10] 
     dummy['size']=50 
     dummy['serial_number']=1+1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -459,7 +459,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(2,) 
-    dummy['t_range_seconds']=[ 12.18,  12.19] 
+    dummy['t_range_seconds']=[ 12.18,  12.20] 
     dummy['size']=10 
     dummy['serial_number']=1+2 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -474,7 +474,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0,9] 
     dummy['t_shape']=(40,) 
-    dummy['t_range_seconds']=[ 12.0,   12.39] 
+    dummy['t_range_seconds']=[ 12.0,   12.40] 
     dummy['size']=220 
     dummy['serial_number']=1+0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
@@ -484,7 +484,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(6,)  
     dummy['s_range']=[4 ,9] 
     dummy['t_shape']=(22,) 
-    dummy['t_range_seconds']=[ 12.18,  12.39] 
+    dummy['t_range_seconds']=[ 12.18,  12.40] 
     dummy['size']=120 
     dummy['serial_number']=1+2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
@@ -494,7 +494,7 @@ def process_continuous_chunks(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(2,) 
-    dummy['t_range_seconds']=[ 12.38 , 12.39] 
+    dummy['t_range_seconds']=[ 12.38 , 12.40] 
     dummy['size']=10 
     dummy['serial_number']=1+5 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
@@ -646,7 +646,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0, 9] 
     dummy['t_shape']=(20,) 
-    dummy['t_range_seconds']=[ 12. ,   12.19] 
+    dummy['t_range_seconds']=[ 12. ,   12.20] 
     dummy['size']=140 
     dummy['serial_number']=1+0 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -656,7 +656,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(10,) 
-    dummy['t_range_seconds']=[ 12. ,   12.09] 
+    dummy['t_range_seconds']=[ 12. ,   12.10] 
     dummy['size']=50 
     dummy['serial_number']=1+1
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -666,7 +666,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(2,) 
-    dummy['t_range_seconds']=[ 12.18,  12.19] 
+    dummy['t_range_seconds']=[ 12.18,  12.20] 
     dummy['size']=10 
     dummy['serial_number']=1+2 
     expectedPatchesChunk1[dummy['serial_number']]=dummy
@@ -681,7 +681,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(10,)  
     dummy['s_range']=[0,9] 
     dummy['t_shape']=(40,) 
-    dummy['t_range_seconds']=[ 12.0,   12.39] 
+    dummy['t_range_seconds']=[ 12.0,   12.40] 
     dummy['size']=220 
     dummy['serial_number']=1+0 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
@@ -691,7 +691,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(6,)  
     dummy['s_range']=[4 ,9] 
     dummy['t_shape']=(22,) 
-    dummy['t_range_seconds']=[ 12.18,  12.39] 
+    dummy['t_range_seconds']=[ 12.18,  12.40] 
     dummy['size']=120 
     dummy['serial_number']=1+2 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
@@ -701,7 +701,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['s_shape']=(5,)  
     dummy['s_range']=[5, 9] 
     dummy['t_shape']=(2,) 
-    dummy['t_range_seconds']=[ 12.38 , 12.39] 
+    dummy['t_range_seconds']=[ 12.38 , 12.40] 
     dummy['size']=10 
     dummy['serial_number']=1+5 
     expectedPatchesChunk2[dummy['serial_number']]=dummy
