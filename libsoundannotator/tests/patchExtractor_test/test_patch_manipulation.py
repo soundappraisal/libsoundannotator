@@ -182,8 +182,8 @@ def test_discontinuous_patch_merge_distribution():
     s_distExpected[:s_weights2.shape[0]]=s_dist2
     s_distExpected[-s_weights1.shape[0]:]=s_dist1
     print('inScaleDistributions: {0}'.format(p1.inScaleDistributions))
-    print('inFrameDistributions p1: {0}, weights: {}'.format(p1.inFrameDistributions, ))
-    print('inFrameDistributions p2: {0}, weights: {}'.format(p2.inFrameDistributions, ))
+    print('inFrameDistributions p1: {0}, weights: {1}'.format(p1.inFrameDistributions,p1.inFrameCount ))
+    print('inFrameDistributions p2: {0}, weights: {1}'.format(p2.inFrameDistributions,p2.inFrameCount ))
     
     np.testing.assert_almost_equal(s_distExpected,p1.inScaleDistributions['dist']) 
     
