@@ -86,14 +86,22 @@ class Patch(object):
     def set_inFrameCount(self,inFrameCount):
         self.inFrameCount=inFrameCount
     
+    def set_inFrameExtrema(self,inFrameLowerScale,inFrameUpperScale):
+        self.inFrameLowerScale=inFrameLowerScale
+        self.inFrameUpperScale=inFrameUpperScale
+    
     def set_inFrameDistribution(self,ts_rep_name,distribution):
         # ts_rep_name: timescale representation name
         assert (distribution.shape == self.t_shape)
         self.inFrameDistributions[ts_rep_name] = distribution
         
     def set_inScaleCount(self,inScaleCount):
-        self.inScaleCount=inScaleCount
-
+        self.inScaleCount=inScaleCount 
+            
+    def set_inScaleExtrema(self, inScaleLowerFrame,inScaleUpperFrame):
+        self.inScaleLowerFrame=self.samplerate*inScaleLowerFrame+ self.t_range_seconds[0]
+        self.inScaleUpperFrame=self.samplerate*inScaleUpperFrame+ self.t_range_seconds[0]
+        
     def set_inScaleDistribution(self,ts_rep_name,distribution):
         # ts_rep_name: timescale representation name
         assert (distribution.shape == self.s_shape)
@@ -194,8 +202,38 @@ class Patch(object):
                 other.framerange, 
                 self.inFrameCount,
                 other.inFrameCount 
-               )     
-          
+            )
+        
+        self.inScaleLowerFrame=joinScaleExtrema(
+                self.inScaleLowerFrame, 
+                other.inScaleLowerFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmin
+            ) 
+            
+        self.inScaleUpperFrame=joinScaleExtrema(
+                self.inScaleUpperFrame, 
+                other.inScaleUpperFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmax
+            ) 
+       
+        self.inFrameLowerScale=joinFrameExtrema(
+                self.inFrameLowerScale, 
+                other.inFrameLowerScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmin
+            ) 
+        self.inFrameUpperScale=joinFrameExtrema(
+                self.inFrameUpperScale, 
+                other.inFrameUpperScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmax
+            ) 
         
         self.merge_descriptors( other)
         
@@ -255,86 +293,108 @@ def joinScaleDistributions( dist1, dist2, range1, range2, weights1, weights2 ):
     
     return newdist, newweights
 
+def joinScaleExtrema( dist1, dist2, range1, range2, extremum_function):
+    assert( (extremum_function is np.fmin) or (extremum_function is np.fmax))
+    
+    newrange=np.array([np.min([range1[0],range2[0]]),np.max([range1[1],range2[1]])]);
+    newdist=np.full([newrange[1]-newrange[0]+1],np.nan)
+    len1=dist1.shape[0]
+    pos1=range1[0]-newrange[0]
+    newdist[pos1:pos1+len1]=dist1
+    
+    len2=dist2.shape[0]
+    pos2=range2[0]-newrange[0]
+    newdist[pos2:pos2+len2]=extremum_function(newdist[pos2:pos2+len2],dist2)
+  
+    
+    return newdist
+
+def endslice(offset):
+    if offset==0:
+        offset=None
+        
+    return offset
+
 def joinFrameDistributions( dist1, dist2, 
                             framerange1, framerange2, 
                             weights1, weights2, 
                             ):
     
-    if framerange1[0] < framerange2[0]:
-        firstindex =0
-    else:
-        firstindex=1
-
     if framerange1[1] > framerange2[1]:
-        lastindex=0
+        laststopped=0
+        firststopped=1
     else:
-        lastindex=1
+        laststopped=1
+        firststopped=0
     
-    #print('firstindex: {0}, lastindex: {1} '.format( firstindex , lastindex ))
     framerange_list=[framerange1,framerange2]
     dist_list=[dist1,dist2]
     weights_list=[weights1,weights2]
-    length_list=[weights1.shape[0],weights2.shape[0]]
-    
-    if framerange1[0][0] == framerange2[0][0]:                     # both Patches start in the same chunk
-        offset=framerange_list[1-firstindex][0][1]-framerange_list[firstindex][0][1]    # Calculate amount the second is shifted compared to first
-                
-        newlength=offset+length_list[1-firstindex]
-        newdist=np.zeros([newlength])
-        newweights=np.zeros([newlength],'int32')
-        
-        newweights[0:length_list[firstindex]]+=weights_list[firstindex]
-        newdist[0:length_list[firstindex]]+=dist_list[firstindex]*weights_list[firstindex]
-        
-        newweights[offset:]+=weights_list[1-firstindex]
-        newdist[offset:]+=dist_list[1-firstindex]*weights_list[1-firstindex]
-    elif framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
-        offset=framerange_list[lastindex][0][1]-framerange_list[1-lastindex][0][1]    # Calculate amount the second is shifted compared to first
-                
-        newlength=offset+length_list[1-lastindex]
-        newdist=np.zeros([newlength])
-        newweights=np.zeros([newlength],'int32')
-        
-        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
-        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
-        
-        newweights[offset:]+=weights_list[lastindex]
-        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
-    elif framerange1[1][0]+1 == framerange2[1][0]:       #  Patches end in consecutive chunks
-        offset=framerange2[1][1]    # Calculate amount the second is shifted compared to first
-        lastindex=1
-                
-        newlength=offset+length_list[1-lastindex]
-        newdist=np.zeros([newlength])
-        newweights=np.zeros([newlength],'int32')
-        
-        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
-        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
-        
-        newweights[offset:]+=weights_list[lastindex]
-        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
-    elif framerange1[1][0] == framerange2[1][0]+1:       #  Patches end in consecutive chunks
-        offset=framerange1[1][1]    # Calculate amount the second is shifted compared to first
-        lastindex=0
-                
-        newlength=offset+length_list[1-lastindex]
-        newdist=np.zeros([newlength])
-        newweights=np.zeros([newlength],'int32')
-        
-        newweights[0:length_list[1-lastindex]]+=weights_list[1-lastindex]
-        newdist[0:length_list[1-lastindex]]+=dist_list[1-lastindex]*weights_list[1-lastindex]
-        
-        newweights[offset:]+=weights_list[lastindex]
-        newdist[offset:]+=dist_list[lastindex]*weights_list[lastindex]
+    length_list=[len(dist1),len(dist2)]
+  
+    if framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
+        offset=framerange_list[laststopped][1][1]-framerange_list[firststopped][1][1]    # Calculate amount the second is shifted compared to first
+    elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
+        offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
     else:
         raise Exception('Unanticipated merge scenario!')
-    # Joining distributions can involve more than 2 patches
-    # in which case the current algorithm cannot assure the 
-    # patches are direct neighbours, in which case it is possible 
-    # a gap arises and hence zero valued weights.
+   
+    newlength=max(offset+length_list[firststopped],length_list[laststopped])
+    
+    print('offset: {}, len(firststopped): {}, len(laststopped): {}'.format(offset,length_list[firststopped],length_list[laststopped]))
+    
+   
+    
+    newdist=np.zeros([newlength],'float')
+    newdist[-length_list[firststopped]-offset:endslice(-offset)]=dist_list[firststopped]*weights_list[firststopped]
+    newdist[-length_list[laststopped]:]+=dist_list[laststopped]*weights_list[laststopped]
+    
+
+    newweights=np.zeros([newlength],'float')
+    newweights[-length_list[firststopped]-offset:endslice(-offset)]+=weights_list[firststopped]
+    newweights[-length_list[laststopped]:]+=weights_list[laststopped]
+    
     newdist[newweights!=0]=newdist[newweights!=0]/newweights[newweights!=0]
     
+    
     return newdist, newweights
+    
+  
+   
+def joinFrameExtrema( dist1, dist2, 
+                      framerange1, framerange2,  
+                      extremum_function):
+                          
+    assert( (extremum_function is np.fmin) or (extremum_function is np.fmax))
+   
+    if framerange1[1] > framerange2[1]:
+        laststopped=0
+        firststopped=1
+    else:
+        laststopped=1
+        firststopped=0
+    
+    framerange_list=[framerange1,framerange2]
+    dist_list=[dist1,dist2]
+    length_list=[len(dist1),len(dist2)]
+  
+    if framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
+        offset=framerange_list[laststopped][1][1]-framerange_list[firststopped][1][1]    # Calculate amount the second is shifted compared to first
+    elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
+        offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
+    else:
+        raise Exception('Unanticipated merge scenario!')
+   
+    newlength=max(offset+length_list[firststopped],length_list[laststopped])
+    newdist=np.full([newlength],np.nan)
+
+    newdist[-length_list[firststopped]-offset:endslice(-offset)]=dist_list[firststopped]
+    newdist[-length_list[laststopped]:]=extremum_function(newdist[-length_list[laststopped]:],dist_list[laststopped])
+    
+    
+    return newdist
+
+
 
 class patchProcessorCore(object):
     
@@ -465,12 +525,13 @@ class patchProcessorCore(object):
                 inScaleLowerFrame=np.zeros(newPatch.s_shape,'int32')
                 inScaleUpperFrame=np.zeros(newPatch.s_shape,'int32')
                 self.extractor.cpp_getInRowExtrema(int(patchNo),inScaleLowerFrame,inScaleUpperFrame)
+                newPatch.set_inScaleExtrema(inScaleLowerFrame,inScaleUpperFrame)
                 
                 # Get and set in column count of timescale pixels
                 inFrameLowerScale=np.zeros(newPatch.t_shape,'int32')
                 inFrameUpperScale=np.zeros(newPatch.t_shape,'int32')
                 self.extractor.cpp_getInColExtrema(int(patchNo),inFrameLowerScale,inFrameUpperScale)
-                
+                newPatch.set_inFrameExtrema(inFrameLowerScale,inFrameUpperScale)
                 
                 self.newpatchlist.append(newPatch)
             

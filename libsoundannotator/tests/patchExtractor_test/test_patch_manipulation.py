@@ -99,12 +99,16 @@ def test_discontinuous_patch_merge_simple():
 
     p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1),samplerate=44100,chunknumber=42)
     p1.set_inFrameCount(t_weights1)
+    p1.set_inFrameExtrema(t_weights1,t_weights1)
     p1.set_inScaleCount(s_weights1)
+    p1.set_inScaleExtrema(s_weights1,s_weights1)
     print('Patch 1: {0}'.format(p1))
     
     p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) ,samplerate=44100,chunknumber=42)
     p2.set_inFrameCount(t_weights2)
+    p2.set_inFrameExtrema(t_weights2,t_weights2)
     p2.set_inScaleCount(s_weights2)
+    p2.set_inScaleExtrema(s_weights2,s_weights2)
     print('Patch 2: {0}'.format(p2))
     
     p1.merge(p2)
@@ -146,13 +150,17 @@ def test_discontinuous_patch_merge_distribution():
 
     p1=Patch(level, t_range1[0], t_range1[1] , s_range1[0], s_range1[1] , np.sum(s_weights1),samplerate=44100,chunknumber=42)
     p1.set_inFrameCount(t_weights1)
+    p1.set_inFrameExtrema(t_weights1,t_weights1)
     p1.set_inScaleCount(s_weights1)
+    p1.set_inScaleExtrema(s_weights1,s_weights1)
     p1.set_inFrameDistribution('dist',t_dist1)
     p1.set_inScaleDistribution('dist',s_dist1)
     print('Patch 1: {0}'.format(p1))
     
     p2=Patch(level, t_range2[0], t_range2[1] , s_range2[0], s_range2[1] , np.sum(s_weights2) ,samplerate=44100,chunknumber=42)
     p2.set_inFrameCount(t_weights2)
+    p2.set_inFrameExtrema(t_weights2,t_weights2)
+    p2.set_inScaleExtrema(s_weights2,s_weights2)
     p2.set_inScaleCount(s_weights2)
     p2.set_inFrameDistribution('dist',t_dist2)
     p2.set_inScaleDistribution('dist',s_dist2)
@@ -174,6 +182,9 @@ def test_discontinuous_patch_merge_distribution():
     s_distExpected[:s_weights2.shape[0]]=s_dist2
     s_distExpected[-s_weights1.shape[0]:]=s_dist1
     print('inScaleDistributions: {0}'.format(p1.inScaleDistributions))
+    print('inFrameDistributions p1: {0}, weights: {}'.format(p1.inFrameDistributions, ))
+    print('inFrameDistributions p2: {0}, weights: {}'.format(p2.inFrameDistributions, ))
+    
     np.testing.assert_almost_equal(s_distExpected,p1.inScaleDistributions['dist']) 
     
     t_distExpected=np.zeros([17-12+1])
