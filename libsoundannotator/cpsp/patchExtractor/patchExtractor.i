@@ -39,6 +39,10 @@ import_array()
 %apply (int DIM1, int DIM2, int *INPLACE_ARRAY2) {(int noofDescriptors, int noofPatches, int *descriptors)};
 %apply (int DIM1, int *INPLACE_ARRAY1) {(int rowsInPatch, int * inRowCountVector)};
 %apply (int DIM1, int *INPLACE_ARRAY1) {(int colsInPatch, int * inColCountVector)};
+
+%apply (int DIM1, int *INPLACE_ARRAY1 ) {(int colsInPatch,   int * inColLowerRow), (int colsInPatch2, int * inColUpperRow)};
+%apply (int DIM1, int *INPLACE_ARRAY1 ) {(int rowsInPatch, int * inRowLowerCol), (int rowsInPatch2, int * inRowUpperCol)};
+
 %apply (int DIM1, int DIM2, int *INPLACE_ARRAY2) {(int noRows, int noCols, int *masks)}
 %apply (int DIM1, int DIM2, double *INPLACE_ARRAY2) {(int noRows, int noCols,  double * TF_Observable)}
 %apply (int DIM1, double *INPLACE_ARRAY1) {( int colsInPatch, double * ColDistVector)}
@@ -121,6 +125,40 @@ public:
             return;
         }
     }
+    
+  
+    
+    %extend {
+        void cpp_getInColExtrema( int patchNo, int colsInPatch, int * inColLowerRow, int colsInPatch2, int * inColUpperRow){
+            int _noofPatches=$self->getNoOfPatches();
+            if(patchNo >=0 && patchNo< _noofPatches  && colsInPatch == $self->getColsInPatch(patchNo)&& colsInPatch2==$self->getColsInPatch(patchNo)){
+                $self->getInColExtrema( patchNo, inColLowerRow,inColUpperRow);
+            }else{
+                PyErr_Format(PyExc_ValueError,
+                "pyPatchExtractor: required size of inColLowerRow and inColUpperRow vector for patchNo  \
+               (%d) out of (%d) patches is: (%d)",patchNo , _noofPatches, $self->getColsInPatch(patchNo));
+            }
+            
+            return;
+        }
+    }
+    
+    %extend {
+        void cpp_getInRowExtrema( int patchNo, int rowsInPatch, int * inRowLowerCol, int rowsInPatch2, int * inRowUpperCol){
+            int _noofPatches=$self->getNoOfPatches();
+            if(patchNo >=0 && patchNo< _noofPatches  && rowsInPatch == $self->getRowsInPatch(patchNo) && rowsInPatch2 == $self->getRowsInPatch(patchNo)){
+                $self->getInRowExtrema( patchNo, inRowLowerCol, inRowUpperCol);
+            }else{
+                PyErr_Format(PyExc_ValueError,
+                "pyPatchExtractor: required size of inRowLowerCol and inRowUpperCol vector for patchNo  \
+               (%d) out of (%d) patches is: (%d)",patchNo , _noofPatches, $self->getRowsInPatch(patchNo));
+            }
+            
+            return;
+        }
+    }
+    
+    
     %extend {
         void cpp_getMasks(int patchNo, int noRows, int noCols, int *masks){
             int noofPatches=$self->getNoOfPatches();

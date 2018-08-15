@@ -36,8 +36,12 @@ class patchExtractor {
         int getNoOfCols(){return noofCols;};
         int getNoOfRows(){return noofRows;};
         void getInColCount(int componentNo, int * ColCountVector);
+        
+        void getInColExtrema(int componentNo, int * inColLowerRow, int * inColUpperRow);
         int getColsInPatch(int patchNo);
         void getInRowCount(int componentNo, int * RowCountVector);
+        
+        void getInRowExtrema(int componentNo, int * inRowLowerCol, int * inRowUpperCol);
         int getRowsInPatch(int patchNo);
         int getMasks(int patchNo, int noofRows, int noofCols, int *masks);   
         int calcInPatchMeans(int noofRows, int noofCols, double * TF_Observable);
@@ -59,6 +63,9 @@ class patchExtractor {
         int * textureType, *lowerCol, *upperCol, *lowerRow, * upperRow , *fullCount;
 
         int ** InRowCounts, **InColCounts;
+        int ** InRowLowerCol,  ** InRowUpperCol, ** InColLowerRow, ** InColUpperRow;
+        
+        
         double ** InRowDist, **InColDist;
         bool inPatchMeansSet;
         void clearInPatchMeans();

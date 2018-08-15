@@ -112,7 +112,7 @@ class Patch(object):
             self.identifier=self_.identifier
         else:
             self.identifier=other_.identifier
-            
+         
         assert(self_.typelabel==other_.typelabel)
         assert(other_.level==self_.level)
                 
@@ -270,7 +270,7 @@ def joinFrameDistributions( dist1, dist2,
     else:
         lastindex=1
     
-    print('firstindex: {0}, lastindex: {1} '.format( firstindex , lastindex ))
+    #print('firstindex: {0}, lastindex: {1} '.format( firstindex , lastindex ))
     framerange_list=[framerange1,framerange2]
     dist_list=[dist1,dist2]
     weights_list=[weights1,weights2]
@@ -459,6 +459,19 @@ class patchProcessorCore(object):
                 inFrameCount=np.zeros(newPatch.t_shape,'int32')
                 self.extractor.cpp_getInColCount(int(patchNo),inFrameCount)
                 newPatch.set_inFrameCount(inFrameCount)
+                
+                
+                 # Get and set in row count of timescale pixels
+                inScaleLowerFrame=np.zeros(newPatch.s_shape,'int32')
+                inScaleUpperFrame=np.zeros(newPatch.s_shape,'int32')
+                self.extractor.cpp_getInRowExtrema(int(patchNo),inScaleLowerFrame,inScaleUpperFrame)
+                
+                # Get and set in column count of timescale pixels
+                inFrameLowerScale=np.zeros(newPatch.t_shape,'int32')
+                inFrameUpperScale=np.zeros(newPatch.t_shape,'int32')
+                self.extractor.cpp_getInColExtrema(int(patchNo),inFrameLowerScale,inFrameUpperScale)
+                
+                
                 self.newpatchlist.append(newPatch)
             
     def joinpatches(self):

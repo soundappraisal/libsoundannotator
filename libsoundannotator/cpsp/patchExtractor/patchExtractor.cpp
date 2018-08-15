@@ -212,6 +212,13 @@ int patchExtractor::calcSimplePatchDescriptors() {
     //  ... and array with pointers to vectors with counts: 
     InRowCounts= new int *[noPatches];
     InColCounts= new int *[noPatches];
+    
+    // ... and per column and per row minima and maxima
+    InRowLowerCol= new int *[noPatches];
+    InRowUpperCol= new int *[noPatches];
+    InColLowerRow= new int *[noPatches];
+    InColUpperRow= new int *[noPatches];
+    
     // ... and flag that we did:
     simpleDescriptorsAllocated=true;
     
@@ -224,11 +231,23 @@ int patchExtractor::calcSimplePatchDescriptors() {
         fullCount[i]=0;
         InRowCounts[i]=new int [noofRows];
         InColCounts[i]=new int [noofCols];
+        
+        InRowLowerCol[i]=new int [noofRows];
+        InRowUpperCol[i]=new int [noofRows];
+        InColLowerRow[i]=new int [noofCols];
+        InColUpperRow[i]=new int [noofCols];
+        
+        
         for (int j=0; j<noofCols; ++j){
             InColCounts[i][j]=0;
+            InColLowerRow[i][j] =0;
+            InColUpperRow[i][j] =0;
         }
+        
         for (int j=0; j<noofRows; ++j){
             InRowCounts[i][j]=0;
+            InRowLowerCol[i][j] =0;
+            InRowUpperCol[i][j] =0;
         }
         
     }
@@ -243,6 +262,12 @@ int patchExtractor::calcSimplePatchDescriptors() {
             if( upperCol[currentPatch] < i ) upperCol[currentPatch]  = i;
             if( lowerRow[currentPatch] > j ) lowerRow[currentPatch]  = j;
             if( upperRow[currentPatch] < j ) upperRow[currentPatch]  = j;
+                   
+            if( InRowLowerCol[currentPatch][j] > i ) InRowLowerCol[currentPatch][j]  = i;
+            if( InRowUpperCol[currentPatch][j] < i ) InRowUpperCol[currentPatch][j]  = i;
+            if( InColLowerRow[currentPatch][i] > j ) InColLowerRow[currentPatch][i]  = j;
+            if( InColUpperRow[currentPatch][i] < j ) InColUpperRow[currentPatch][i]  = j;
+            
             InRowCounts[currentPatch][j]++;
             InColCounts[currentPatch][i]++;
             fullCount[currentPatch]++;
@@ -263,9 +288,18 @@ void patchExtractor::clearSimplePatchDescriptors(){
         for (int i=0;i<noPatches;++i){
             delete [] InRowCounts[i];
             delete [] InColCounts[i];
+            delete [] InRowLowerCol[i];
+            delete [] InRowUpperCol[i];
+            delete [] InColLowerRow[i];
+            delete [] InColUpperRow[i];
         }
         delete [] InRowCounts;
         delete [] InColCounts;
+        delete [] InRowLowerCol;
+        delete [] InRowUpperCol;
+        delete [] InColLowerRow;
+        delete [] InColUpperRow;
+        
         simpleDescriptorsAllocated=false;
     }   
 }
@@ -325,6 +359,27 @@ void patchExtractor::getInRowCount(int patchNo, int * RowCountVector){
     j=0;
     for(i=lowerRow[patchNo];i<=upperRow[patchNo];i++){
         RowCountVector[j]=InRowCounts[patchNo][i];
+        j++;
+    }
+}
+
+
+void patchExtractor::getInColExtrema(int patchNo, int * inColLowerRowVector, int * inColUpperRowVector){      
+    int i,j;
+    j=0;
+    for(i=lowerCol[patchNo];i<=upperCol[patchNo];i++){
+        inColLowerRowVector[j]=InColLowerRow[patchNo][i];
+        inColUpperRowVector[j]=InColUpperRow[patchNo][i];
+        j++;
+    }
+    
+}
+void patchExtractor::getInRowExtrema(int patchNo, int * inRowLowerColVector, int * inRowUpperColVector){      
+    int i,j;
+    j=0;
+    for(i=lowerRow[patchNo];i<=upperRow[patchNo];i++){
+        inRowLowerColVector[j]=InRowLowerCol[patchNo][i];
+        inRowUpperColVector[j]=InRowUpperCol[patchNo][i];
         j++;
     }
 }
