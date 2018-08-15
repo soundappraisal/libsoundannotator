@@ -240,13 +240,13 @@ int patchExtractor::calcSimplePatchDescriptors() {
         
         for (int j=0; j<noofCols; ++j){
             InColCounts[i][j]=0;
-            InColLowerRow[i][j] =0;
+            InColLowerRow[i][j] =noofRows+1;
             InColUpperRow[i][j] =0;
         }
         
         for (int j=0; j<noofRows; ++j){
             InRowCounts[i][j]=0;
-            InRowLowerCol[i][j] =0;
+            InRowLowerCol[i][j] =noofCols+1;
             InRowUpperCol[i][j] =0;
         }
         

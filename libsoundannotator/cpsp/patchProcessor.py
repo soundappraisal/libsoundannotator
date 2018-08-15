@@ -59,6 +59,8 @@ class Patch(object):
         self.s_shape=(s_high-s_low+1,)
         self.s_range=np.array([s_low,s_high])
         self.t_shape=(t_high-t_low+1,)
+        self.t_range=np.array([t_low,t_high])
+        self.t_offset=t_offset
         
         if not t_offset == None:
             assert(samplerate > 0)
@@ -99,8 +101,8 @@ class Patch(object):
         self.inScaleCount=inScaleCount 
             
     def set_inScaleExtrema(self, inScaleLowerFrame,inScaleUpperFrame):
-        self.inScaleLowerFrame=self.samplerate*inScaleLowerFrame+ self.t_range_seconds[0]
-        self.inScaleUpperFrame=self.samplerate*inScaleUpperFrame+ self.t_range_seconds[0]
+        self.inScaleLowerFrame=inScaleLowerFrame/self.samplerate + self.t_offset
+        self.inScaleUpperFrame=inScaleUpperFrame/self.samplerate + self.t_offset
         
     def set_inScaleDistribution(self,ts_rep_name,distribution):
         # ts_rep_name: timescale representation name
@@ -144,6 +146,36 @@ class Patch(object):
         self.height=self.s_shape[0]
         self.fillratio=self.size/(self.duration*self.height)
         
+        self.inScaleLowerFrame=joinScaleExtrema(
+                self.inScaleLowerFrame, 
+                other.inScaleLowerFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmin
+            ) 
+            
+        self.inScaleUpperFrame=joinScaleExtrema(
+                self.inScaleUpperFrame, 
+                other.inScaleUpperFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmax
+            ) 
+       
+        self.inFrameLowerScale=joinFrameExtrema(
+                self.inFrameLowerScale, 
+                other.inFrameLowerScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmin
+            ) 
+        self.inFrameUpperScale=joinFrameExtrema(
+                self.inFrameUpperScale, 
+                other.inFrameUpperScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmax
+            ) 
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
         
@@ -204,36 +236,7 @@ class Patch(object):
                 other.inFrameCount 
             )
         
-        self.inScaleLowerFrame=joinScaleExtrema(
-                self.inScaleLowerFrame, 
-                other.inScaleLowerFrame, 
-                self.s_range, 
-                other.s_range, 
-                np.fmin
-            ) 
-            
-        self.inScaleUpperFrame=joinScaleExtrema(
-                self.inScaleUpperFrame, 
-                other.inScaleUpperFrame, 
-                self.s_range, 
-                other.s_range, 
-                np.fmax
-            ) 
        
-        self.inFrameLowerScale=joinFrameExtrema(
-                self.inFrameLowerScale, 
-                other.inFrameLowerScale,  
-                self.framerange, 
-                other.framerange, 
-                np.fmin
-            ) 
-        self.inFrameUpperScale=joinFrameExtrema(
-                self.inFrameUpperScale, 
-                other.inFrameUpperScale,  
-                self.framerange, 
-                other.framerange, 
-                np.fmax
-            ) 
         
         self.merge_descriptors( other)
         
@@ -337,6 +340,7 @@ def joinFrameDistributions( dist1, dist2,
     elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
         offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
     else:
+        self.logger.error('joinFrameDistributions: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
         raise Exception('Unanticipated merge scenario!')
    
     newlength=max(offset+length_list[firststopped],length_list[laststopped])
@@ -383,6 +387,7 @@ def joinFrameExtrema( dist1, dist2,
     elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
         offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
     else:
+        self.logger.error('joinFrameExtrema: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
         raise Exception('Unanticipated merge scenario!')
    
     newlength=max(offset+length_list[firststopped],length_list[laststopped])
