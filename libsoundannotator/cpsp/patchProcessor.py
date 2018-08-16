@@ -145,37 +145,7 @@ class Patch(object):
         self.duration=self.t_range_seconds[1] -self.t_range_seconds[0] 
         self.height=self.s_shape[0]
         self.fillratio=self.size/(self.duration*self.height)
-        
-        self.inScaleLowerFrame=joinScaleExtrema(
-                self.inScaleLowerFrame, 
-                other.inScaleLowerFrame, 
-                self.s_range, 
-                other.s_range, 
-                np.fmin
-            ) 
-            
-        self.inScaleUpperFrame=joinScaleExtrema(
-                self.inScaleUpperFrame, 
-                other.inScaleUpperFrame, 
-                self.s_range, 
-                other.s_range, 
-                np.fmax
-            ) 
        
-        self.inFrameLowerScale=joinFrameExtrema(
-                self.inFrameLowerScale, 
-                other.inFrameLowerScale,  
-                self.framerange, 
-                other.framerange, 
-                np.fmin
-            ) 
-        self.inFrameUpperScale=joinFrameExtrema(
-                self.inFrameUpperScale, 
-                other.inFrameUpperScale,  
-                self.framerange, 
-                other.framerange, 
-                np.fmax
-            ) 
         
         self.serial_number=np.min([self_.serial_number,other_.serial_number])
         
@@ -236,11 +206,41 @@ class Patch(object):
                 other.inFrameCount 
             )
         
+        
+        self.inScaleLowerFrame=joinScaleExtrema(
+                self.inScaleLowerFrame, 
+                other.inScaleLowerFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmin
+            ) 
+            
+        self.inScaleUpperFrame=joinScaleExtrema(
+                self.inScaleUpperFrame, 
+                other.inScaleUpperFrame, 
+                self.s_range, 
+                other.s_range, 
+                np.fmax
+            ) 
        
+        self.inFrameLowerScale=joinFrameExtrema(
+                self.inFrameLowerScale, 
+                other.inFrameLowerScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmin
+            ) 
+        self.inFrameUpperScale=joinFrameExtrema(
+                self.inFrameUpperScale, 
+                other.inFrameUpperScale,  
+                self.framerange, 
+                other.framerange, 
+                np.fmax
+            ) 
         
         self.merge_descriptors( other)
         
-       
+        return self
          
     def __str__(self):
         
@@ -337,17 +337,13 @@ def joinFrameDistributions( dist1, dist2,
   
     if framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
         offset=framerange_list[laststopped][1][1]-framerange_list[firststopped][1][1]    # Calculate amount the second is shifted compared to first
-    elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
+    elif framerange_list[laststopped][1][0] > framerange_list[firststopped][1][0]:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
         offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
     else:
-        self.logger.error('joinFrameDistributions: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
-        raise Exception('Unanticipated merge scenario!')
+        #self.logger.error('joinFrameDistributions: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
+        raise Exception('Unanticipated merge scenario! Please update your test!')
    
     newlength=max(offset+length_list[firststopped],length_list[laststopped])
-    
-    print('offset: {}, len(firststopped): {}, len(laststopped): {}'.format(offset,length_list[firststopped],length_list[laststopped]))
-    
-   
     
     newdist=np.zeros([newlength],'float')
     newdist[-length_list[firststopped]-offset:endslice(-offset)]=dist_list[firststopped]*weights_list[firststopped]
@@ -384,11 +380,11 @@ def joinFrameExtrema( dist1, dist2,
   
     if framerange1[1][0] == framerange2[1][0]:         # both Patches end in the same chunk
         offset=framerange_list[laststopped][1][1]-framerange_list[firststopped][1][1]    # Calculate amount the second is shifted compared to first
-    elif framerange_list[laststopped][1][0] == framerange_list[firststopped][1][0]+1:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
+    elif framerange_list[laststopped][1][0] > framerange_list[firststopped][1][0]:       #  Patches end in consecutive chunks, implies firststopped is on frame boundary
         offset=framerange_list[laststopped][1][1]    # Calculate amount the second is shifted compared to first
     else:
-        self.logger.error('joinFrameExtrema: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
-        raise Exception('Unanticipated merge scenario!')
+        #self.logger.error('joinFrameExtrema: Unanticipated merge scenario! framerange1: {} framerange2: {}'.format(framerange1,framerange2))
+        raise Exception('Unanticipated merge scenario! Please update your test!')
    
     newlength=max(offset+length_list[firststopped],length_list[laststopped])
     newdist=np.full([newlength],np.nan)
@@ -611,7 +607,8 @@ class patchProcessorCore(object):
                             # Merge in place from the perspective of the dictionary.
                             # The same old patch can appear more than once in the joinMatrix, we can therefore
                             # not append the resulting patch to the updatedPatchList here. 
-                            oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge_descriptors(continued_patch)
+                            oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge(continued_patch)
+                            
                             
             for serial_number in continuedpatches:
                 updatedPatchList.append(oldpatches[serial_number])
