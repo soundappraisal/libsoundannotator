@@ -496,31 +496,35 @@ def process_continuous_chunks(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.38 , 12.40] 
     dummy['size']=10 
-    dummy['serial_number']=1+5 
+    dummy['serial_number']=1+5
     expectedPatchesChunk2[dummy['serial_number']]=dummy
+    
+    
 
     #print('{0}, {1}'.format(r1,r2))
     for patch in r1['patches']:
-        logger.info('==1======= \n {} \n ====='.format(patch))
+        logger.info('==r1======= \n {} \n ====='.format(''))#patch
         dummy=expectedPatchesChunk1[patch.serial_number]
         for key, value in dummy.items():
-            logger.info('key: {0}, value: {1}'.format(key,value))
+            logger.info('key: {0}, value expected: {1}, obtained: {2}'.format(key,value,patch.__dict__[key]))
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
             else:
-                assert(value == patch.__dict__[key])
+                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
     
     for patch in r2['patches']:
-        logger.info('==2======= \n {0} \n ======='.format(patch))
+        logger.info('==r2======= \n {0} \n ======='.format(patch))#patch
         dummy=expectedPatchesChunk2[patch.serial_number]
+        logger.info('keys: {0}, patch.serial_number: {1}'.format(expectedPatchesChunk2.keys(),patch.serial_number))
         for key, value in dummy.items():
-            logger.info('key: {0}, value: {1}'.format(key,value))
+            logger.info('key: {0}, value expected: {1}'.format(key,value))
+            logger.info('obtained: {0}'.format(patch.__dict__[key]))
             assert(key in patch.__dict__.keys())
-            logger.info('value: {0}'.format(patch.__dict__[key]))
+            
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
             else:
-                assert(value == patch.__dict__[key])
+                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
     
 
 
@@ -703,8 +707,9 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
     dummy['t_shape']=(2,) 
     dummy['t_range_seconds']=[ 12.38 , 12.40] 
     dummy['size']=10 
-    dummy['serial_number']=1+5 
+    dummy['serial_number']=1+5
     expectedPatchesChunk2[dummy['serial_number']]=dummy
+   
 
     #print('{0}, {1}'.format(r1,r2))
     for patch in r1['patches']:
@@ -715,7 +720,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
             else:
-                assert(value == patch.__dict__[key])
+                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
     
     for patch in r2['patches']:
         print '==2======= \n {0} \n ======='.format(patch)
@@ -727,7 +732,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
             else:
-                assert(value == patch.__dict__[key])
+                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
     
 
 

@@ -125,7 +125,9 @@ class Patch(object):
          
         assert(self_.typelabel==other_.typelabel)
         assert(other_.level==self_.level)
-                
+        
+        self.joinExtrema(other_)
+        
         self.s_range=np.array(  [   np.min([other_.s_range[0],self_.s_range[0]]),
                                     np.max([other_.s_range[1],self_.s_range[1]])]    )
         self.s_shape=(self.s_range[1]-self.s_range[0]+1,)
@@ -207,6 +209,12 @@ class Patch(object):
             )
         
         
+        self.merge_descriptors( other)
+        
+        return self
+        
+    def joinExtrema(self,other):
+           
         self.inScaleLowerFrame=joinScaleExtrema(
                 self.inScaleLowerFrame, 
                 other.inScaleLowerFrame, 
@@ -237,11 +245,8 @@ class Patch(object):
                 other.framerange, 
                 np.fmax
             ) 
-        
-        self.merge_descriptors( other)
-        
-        return self
          
+        
     def __str__(self):
         
         
@@ -584,6 +589,7 @@ class patchProcessorCore(object):
             
             for patch in self.oldpatchlist:
                 oldpatches[patch.serial_number]=patch
+                
             
             for patch in self.newpatchlist:
                 newpatches[patch.serial_number]=patch
@@ -608,14 +614,33 @@ class patchProcessorCore(object):
                             # The same old patch can appear more than once in the joinMatrix, we can therefore
                             # not append the resulting patch to the updatedPatchList here. 
                             oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge(continued_patch)
-                            
+                elif patch_key_for_new_chunk in oldpatches.keys():
+                    patch_for_new_chunk=oldpatches[patch_key_for_new_chunk]
+                    patchestokeep=patchestokeep.union({patch_key_for_new_chunk,})
+                    if not self.joinMatrix[patchNo,1] ==  patch_key_for_new_chunk: 
+                        # The patch is involved in merge over the chunk boundary, 
+                        # remove from the list of unaffected patches. 
+                        patchestokeep=patchestokeep.difference({patch_key_for_new_chunk,})  
+                        
+                        # Get the old patch involved in the merge and merge
+                        patch_key_for_old_chunk=self.joinMatrix[patchNo,1]
+                        if patch_key_for_old_chunk in oldpatches.keys():
+                            continued_patch=oldpatches[patch_key_for_old_chunk]   
+                            continuedpatches=continuedpatches.union({continued_patch.serial_number, })
+                            # Merge in place from the perspective of the dictionary.
+                            # The same old patch can appear more than once in the joinMatrix, we can therefore
+                            # not append the resulting patch to the updatedPatchList here. 
+                            oldpatches[continued_patch.serial_number]=patch_for_new_chunk.merge(continued_patch)
+                
                             
             for serial_number in continuedpatches:
                 updatedPatchList.append(oldpatches[serial_number])
      
             for serial_number in patchestokeep:
-                updatedPatchList.append(newpatches[serial_number])
-                
+                if serial_number in newpatches.keys():
+                    updatedPatchList.append(newpatches[serial_number])
+                else:
+                    updatedPatchList.append(oldpatches[serial_number])
             self.newpatchlist=updatedPatchList
             
            
