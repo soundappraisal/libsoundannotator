@@ -510,7 +510,7 @@ def process_continuous_chunks(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
             else:
-                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
+                assert (value == patch.__dict__[key]),'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key])
     
     for patch in r2['patches']:
         logger.info('==r2======= \n {0} \n ======='.format(patch))#patch
@@ -524,7 +524,7 @@ def process_continuous_chunks(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
             else:
-                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
+                assert (value == patch.__dict__[key]), 'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key])
     
 
 
@@ -720,7 +720,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6)  # microsecond precision
             else:
-                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
+                assert (value == patch.__dict__[key]) ,'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key])
     
     for patch in r2['patches']:
         print '==2======= \n {0} \n ======='.format(patch)
@@ -732,7 +732,7 @@ def process_continuous_chunks_non_trivial_alignment(myQueue):
             if type(value) == list:
                 np.testing.assert_almost_equal( patch.__dict__[key],value,decimal=6) # microsecond precision
             else:
-                assert(value == patch.__dict__[key],'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key]))
+                assert (value == patch.__dict__[key]) ,'In r2 value expected for {0}: {1}, obtained:{2}'.format(key,value,patch.__dict__[key])
     
 
 
