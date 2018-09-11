@@ -175,7 +175,7 @@ class compositeManager(object):
         status=None
         
         index=chunk.number-self.index0number
-        self.processor.logger.error('Received a chunk for key {} number {}'.format(receiverKey,chunk.number))
+        self.processor.logger.info('Received a chunk for key {} number {}'.format(receiverKey,chunk.number))
         if  index >= 0:
             status=self.compositeChunkList[index].update(receiverKey, chunk)
         else:

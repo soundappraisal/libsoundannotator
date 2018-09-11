@@ -400,7 +400,14 @@ def joinFrameExtrema( dist1, dist2,
     
     return newdist
 
-
+def findPatchesEndingOnChunkBoundary(unfinalizedpatchbuffer, compositeChunk, requiredKeys):
+    for key in requiredKeys:
+        lookuptable=dict(compositeChunk.received[key].data['join_matrix'])
+        compositeChunk.received[key].data['patches_ending_on_boundary']=list()
+        for patch in unfinalizedpatchbuffer.received[key].data['unfinalized_patches']:
+            if  not patch.serial_number in lookuptable.keys(): # Linked chunks are in the lookup table, we need to save the unlinked ones.
+                #self.logger.info('patch ending on chunk boundary patch.serial_number: {}, size: {}'.format(patch.serial_number,patch.size))
+                compositeChunk.received[key].data['patches_ending_on_boundary'].append(patch)
 
 class patchProcessorCore(object):
     
