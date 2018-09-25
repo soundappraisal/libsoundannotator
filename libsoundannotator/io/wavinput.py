@@ -31,6 +31,7 @@ class WavChunkReader(object):
         self.wavereader = wave.open(soundfile)
         self.fs=self.wavereader.getframerate()
         self.nframes=self.wavereader.getnframes()
+        self.nchannels=self.wavereader.getnchannels()
         self.duration = float(self.nframes) / float(self.fs)
         samplewidth=self.wavereader.getsampwidth()
         self.dtype='int{0}'.format(2**(samplewidth-1)*8)
@@ -82,7 +83,7 @@ class WavChunkReader(object):
             del self.wavereader
         
         
-        return np.fromstring(frames, dtype=self.dtype)
+        return np.fromstring(frames, dtype=self.dtype)[::self.nchannels]
 
     def getNullChunk(self, N):
         return np.zeros(N,dtype=self.dtype)
